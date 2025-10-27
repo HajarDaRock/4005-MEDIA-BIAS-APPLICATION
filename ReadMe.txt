@@ -24,6 +24,7 @@ Quick Start
    Outputs:
    - models/textcnn_state.pt
    - models/vocab.json
+   - Console metrics each epoch: accuracy + macro precision/recall/F1
 
 4) Run the app:
    uvicorn main:app --reload
@@ -51,6 +52,7 @@ Use Kaggle Datasets (Optional)
 
 3) Train using the generated `data/train.csv`:
    python train_textcnn.py --train_csv data/train.csv --text_col text --label_col label --epochs 6 --batch_size 64 --max_len 400
+   You’ll see per-epoch validation accuracy and macro P/R/F1.
 
 Legacy llama-cpp Instructions (Deprecated)
 -----------------------------------------

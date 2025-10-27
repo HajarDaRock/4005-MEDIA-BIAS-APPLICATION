@@ -133,11 +133,13 @@ def train_one_epoch(model, loader, criterion, optimizer, device):
     return total_loss / max(1, total), correct / max(1, total)
 
 
-def eval_epoch(model, loader, criterion, device):
+def eval_epoch(model, loader, criterion, device, num_classes: int):
     model.eval()
     total_loss = 0.0
     total = 0
     correct = 0
+    # confusion matrix
+    cm = torch.zeros((num_classes, num_classes), dtype=torch.long)
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device)
@@ -146,8 +148,24 @@ def eval_epoch(model, loader, criterion, device):
             loss = criterion(logits, y)
             total_loss += float(loss.item()) * y.size(0)
             total += y.size(0)
-            correct += int((logits.argmax(dim=1) == y).sum().item())
-    return total_loss / max(1, total), correct / max(1, total)
+            preds = logits.argmax(dim=1)
+            correct += int((preds == y).sum().item())
+            for t, p in zip(y.view(-1), preds.view(-1)):
+                cm[t.long(), p.long()] += 1
+    # compute precision, recall, f1 (macro)
+    tp = cm.diag().to(torch.float)
+    fp = cm.sum(dim=0).to(torch.float) - tp
+    fn = cm.sum(dim=1).to(torch.float) - tp
+    precision = torch.where(tp + fp > 0, tp / (tp + fp), torch.zeros_like(tp))
+    recall = torch.where(tp + fn > 0, tp / (tp + fn), torch.zeros_like(tp))
+    f1 = torch.where(precision + recall > 0, 2 * precision * recall / (precision + recall), torch.zeros_like(tp))
+    metrics = {
+        "precision_macro": float(precision.mean().item()),
+        "recall_macro": float(recall.mean().item()),
+        "f1_macro": float(f1.mean().item()),
+        "confusion_matrix": cm.tolist(),
+    }
+    return total_loss / max(1, total), correct / max(1, total), metrics
 
 
 def main():
@@ -218,8 +236,12 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         tr_loss, tr_acc = train_one_epoch(model, train_loader, criterion, optimizer, device)
-        va_loss, va_acc = eval_epoch(model, val_loader, criterion, device)
-        print(f"Epoch {epoch:02d} | train_loss={tr_loss:.4f} acc={tr_acc:.4f} | val_loss={va_loss:.4f} acc={va_acc:.4f}")
+        va_loss, va_acc, va_metrics = eval_epoch(model, val_loader, criterion, device, num_classes=len(id2label))
+        print(
+            "Epoch {:02d} | train_loss={:.4f} acc={:.4f} | val_loss={:.4f} acc={:.4f} | P={:.3f} R={:.3f} F1={:.3f}".format(
+                epoch, tr_loss, tr_acc, va_loss, va_acc, va_metrics["precision_macro"], va_metrics["recall_macro"], va_metrics["f1_macro"]
+            )
+        )
         # Save best by val loss
         if va_loss < best_val_loss:
             best_val_loss = va_loss
@@ -248,4 +270,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
