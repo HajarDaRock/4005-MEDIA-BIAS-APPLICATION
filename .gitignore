@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Data and artifacts
+ExtractedData.xlsx
+data/
+!data/.gitkeep
+
+# Models and large binaries
+models/*.gguf
+models/*.bin
+models/*.pt
+!models/textcnn_state.pt
+!models/__init__.py
+!models/textcnn.py
+
+# Caches
+*.log
+*.cache
+*.tmp
+

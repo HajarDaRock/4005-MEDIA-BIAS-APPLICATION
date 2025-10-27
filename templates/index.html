@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Canadian Media Bias Checker</title>
+        <!-- Link to external stylesheet -->
+        <link rel="stylesheet" href="/static/style.css">
+        <!-- Favicon for the webpage -->
+        <link rel="icon" type="image/png" href="/static/favicon.png">
+    </head>
+
+<body class="body">
+    <!-- Main header -->
+    <h1 class="header">Canadian Media Bias Checker</h1>
+
+    <!-- Navigation bar -->
+    <nav id="main-nav"> 
+        <ul>
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/a">About Us</a></li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <!-- Search Bias Rating Section -->
+        <h2 class="subheading" style="text-align: center;">Search Bias Rating</h2>
+
+        <div class="search-section">
+            <!-- Dropdown for selecting media outlet -->
+            <div class="dropdown-section">
+                <label><strong>Outlet Name:</strong></label>
+                <div class="inline-group">
+                    <select id="outletSelect">
+                        <option value="">- Choose an outlet -</option>
+                        <option value="Global News">Global News</option>
+                        <option value="City News">City News</option>
+                        <option value="The Globe and Mail">The Globe and Mail</option>
+                        <option value="National Post">National Post</option>
+                        <option value="Business Insider">Business Insider</option>
+                        <option value="CBC News">CBC News</option>
+                    </select>
+                    <!-- Button to check outlet bias -->
+                    <button class="small-btn" onclick="checkOutletBias()">Show Outlet Bias</button>
+                </div>
+            </div>
+            <br>
+            <!-- Input field for article URL -->
+            <div class="input-field">
+                <label><strong>URL of a news article:</strong></label>
+                <div class="inline-group">
+                    <input type="text" id="urlInput" placeholder="Paste article URL here..." />
+                    <!-- Button to check article bias -->
+                    <button class="small-btn" onclick="checkBias()">Check Article Bias</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reset button -->
+        <div class="reset-container">
+            <button onclick="resetForm()" class="reset-button">Reset</button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="response-container">
+            <h3 id="result-label" style="display: none;">
+                Bias Rating: <span id="result" class="rating"></span>
+            </h3>
+            <div id="error" class="error" style="display: none;"></div>
+        </div>
+
+        <!-- Information Section: What is Media Bias? -->
+        <h2 class="subheading" style="text-align: center;">What is Media Bias?</h2>
+
+        <div class="bias-section">
+            <!-- Example of a biased headline -->
+            <h3 class="bias-title">Example of a Biased Headline:</h3>
+            <div class="bias-pair">
+                <img src="/static/Headline.png" alt="Headline Example">
+                <p>
+                    This headline is a good example of how media can shape what we think before we’ve even read the article. 
+                    It’s bold, dramatic, and meant to grab attention - which is normal - but it also hints at a deeper opinion or mood. 
+                    Depending on how it's written, a headline like this might subtly lean left or right, even without saying it outright. 
+                    That’s where bias can sneak in: not just in what’s reported, but how it’s introduced.
+                </p>
+            </div>
+
+            <!-- Example of a biased article -->
+            <h3 class="bias-title right">Example of a Biased Article:</h3>
+            <div class="bias-pair right">
+                <img src="/static/Article.png" alt="Article Example">
+                <p>
+                    This article talks about Mark Carney’s moves around federal spending and cancelling the carbon tax. 
+                    On the surface, it seems neutral, but the way it’s written—highlighting things like the "$4-billion hole" or saying the tax was cancelled “through administrative fiat,” adds a certain tone. 
+                    It's not always about what’s said, but how it’s said. Articles like this can sway readers one way or the other depending on what details are emphasized. 
+                    It’s a great example of how even factual reporting can feel biased if framed a certain way.
+                </p>
+            </div>
+        </div>
+
+    <!-- JavaScript Section -->
+    <script>
+        // Function to check bias of an article based on URL
+        async function checkBias() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            const resultDiv = document.getElementById('result');
+            const resultLabel = document.getElementById('result-label');
+            const errorDiv = document.getElementById('error');
+    
+            // Reset result and error display
+            resultLabel.style.display = "none";
+            errorDiv.style.display = "none";
+            resultDiv.textContent = "";
+    
+            // Validate URL input
+            if (!url || !url.startsWith("http")) {
+                errorDiv.textContent = "Please enter a valid URL (must start with http or https).";
+                errorDiv.style.display = "block";
+                return;
+            }
+    
+            try {
+                // Send POST request to backend
+                const response = await fetch("/classify", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ url })
+                });
+    
+                const data = await response.json();
+    
+                // Display result or error
+                if (data.error) {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = "block";
+                } else {
+                    resultDiv.textContent = data.bias;
+                    resultLabel.style.display = "block";
+                }
+    
+            } catch (error) {
+                errorDiv.textContent = "Could not connect to the backend server.";
+                errorDiv.style.display = "block";
+            }
+        }
+    
+        // Function to check bias of a selected media outlet
+        function checkOutletBias() {
+            const outlet = document.getElementById('outletSelect').value;
+            const resultDiv = document.getElementById('result');
+            const resultLabel = document.getElementById('result-label');
+            const errorDiv = document.getElementById('error');
+    
+            // Reset result and error display
+            resultLabel.style.display = "none";
+            errorDiv.style.display = "none";
+            resultDiv.textContent = "";
+    
+            // Predefined outlet bias ratings
+            const outletRatings = {
+                "Global News": "Neutral",
+                "City News": "Left-Neutral",
+                "The Globe and Mail": "Left",
+                "National Post": "Neutral",
+                "Business Insider": "Left",
+                "CBC News": "Left-Neutral"
+            };
+    
+            // Validate outlet selection
+            if (!outlet) {
+                errorDiv.textContent = "Please select a media outlet.";
+                errorDiv.style.display = "block";
+                return;
+            }
+    
+            // Display bias rating
+            const rating = outletRatings[outlet] || "Unrated";
+            resultDiv.textContent = rating;
+            resultLabel.style.display = "block";
+        }
+
+        // Function to reset the form and clear results
+        function resetForm() {
+            document.getElementById('urlInput').value = "";
+            document.getElementById('outletSelect').selectedIndex = 0;
+
+            document.getElementById('result').textContent = "";
+            document.getElementById('result-label').style.display = "none";
+
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = "";
+            errorDiv.style.display = "none";
+        }
+    </script>            
+
+</body>
+</html>
