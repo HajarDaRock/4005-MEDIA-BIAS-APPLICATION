@@ -1,0 +1,32 @@
+{
+  "label_col": "label",
+  "train_csv": "data/train_split.csv",
+  "val_csv": "data/val_split.csv",
+  "test_csv": "data/test_split.csv",
+  "splits": {
+    "train": {
+      "rows": 22824,
+      "label_counts": {
+        "Neutral": 7608,
+        "Right": 7608,
+        "Left": 7608
+      }
+    },
+    "val": {
+      "rows": 4890,
+      "label_counts": {
+        "Left": 1630,
+        "Neutral": 1630,
+        "Right": 1630
+      }
+    },
+    "test": {
+      "rows": 4890,
+      "label_counts": {
+        "Left": 1630,
+        "Neutral": 1630,
+        "Right": 1630
+      }
+    }
+  }
+}

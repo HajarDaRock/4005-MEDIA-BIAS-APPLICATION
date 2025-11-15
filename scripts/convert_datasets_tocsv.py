@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Conversions for non-CSV Kaggle datasets into simple text/label CSVs used by
-`prepare_kaggle_data.py`.
+Utilities to convert non-CSV Kaggle datasets into simple ``text,label`` CSVs
+consumed by ``prepare_kaggle_data.py``.
 
-Currently handles:
-- `labelled-corpus-political-bias-hugging-face` (folders of .txt files)
-- `babe-media-bias-annotations-by-experts` neutral headlines
+Currently handled:
+  - ``labelled-corpus-political-bias-hugging-face`` (folders of .txt files)
+  - ``babe-media-bias-annotations-by-experts`` (neutral headlines + segment-
+    level Left/Right/Center annotations, combined into a single ``babe_all``
+    file).
 """
 
 from __future__ import annotations
@@ -114,6 +116,113 @@ def convert_babe_neutral() -> None:
     out_df.to_csv(output_path, index=False, encoding="utf-8")
     print(f"[convert_babe] Wrote {len(out_df)} neutral rows to {output_path}")
 
+def convert_babe_lrc() -> None:
+    """
+    Convert BABE segment-level annotations into Left/Right/Neutral examples.
+
+    Uses the `final_labels_*.csv` files, which contain a `type` column with
+    values like `left`, `right`, or `center`. These are mapped onto our
+    canonical labels and written to `babe_lrc.csv` with `text,label` columns.
+    """
+    babe_root = Path("data/babe-media-bias-annotations-by-experts")
+    if not babe_root.exists():
+        print(f"[convert_babe_lrc] Skip: {babe_root} not found.")
+        return
+
+    patterns = ["final_labels_MBIC.csv", "final_labels_SG1.csv", "final_labels_SG2.csv"]
+    sources: List[Path] = []
+    for pattern in patterns:
+        matches = list(babe_root.rglob(pattern))
+        sources.extend(matches)
+
+    if not sources:
+        print(f"[convert_babe_lrc] Skip: no final_labels_*.csv files under {babe_root}")
+        return
+
+    label_map = {"left": "Left", "right": "Right", "center": "Neutral"}
+    parts: List[pd.DataFrame] = []
+
+    for src in sources:
+        try:
+            df = pd.read_csv(src, sep=";", engine="python")
+        except Exception as exc:
+            print(f"[convert_babe_lrc] Failed to read {src}: {exc}")
+            continue
+
+        if "text" not in df.columns or "type" not in df.columns:
+            print(f"[convert_babe_lrc] Unexpected columns in {src}: {df.columns.tolist()}")
+            continue
+
+        df["type"] = df["type"].astype(str).str.strip().str.lower()
+        df = df[df["type"].isin(label_map.keys())].copy()
+        if df.empty:
+            continue
+
+        df["text"] = df["text"].astype(str).str.strip()
+        df = df[df["text"].str.len() > 30]
+        if df.empty:
+            continue
+
+        df["label"] = df["type"].map(label_map)
+        parts.append(df[["text", "label"]])
+
+    if not parts:
+        print("[convert_babe_lrc] No usable rows collected from BABE final_labels files.")
+        return
+
+    out_df = (
+        pd.concat(parts, axis=0, ignore_index=True)
+        .drop_duplicates(subset=["text"])
+        .reset_index(drop=True)
+    )
+
+    output_path = babe_root / "babe_lrc.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(output_path, index=False, encoding="utf-8")
+    print(f"[convert_babe_lrc] Wrote {len(out_df)} Left/Right/Neutral rows to {output_path}")
+
+
+def combine_babe_all() -> None:
+    """
+    Combine all BABE-derived examples (neutral headlines + L/R/C segments)
+    into a single CSV `babe_all.csv` with text/label columns.
+
+    This keeps conversion simple for the rest of the pipeline so only one
+    BABE file needs to be included when building the global training CSV.
+    """
+    babe_root = Path("data/babe-media-bias-annotations-by-experts")
+    neutral_path = babe_root / "babe_neutral.csv"
+    lrc_path = babe_root / "babe_lrc.csv"
+
+    parts: List[pd.DataFrame] = []
+    for pth in (neutral_path, lrc_path):
+        if not pth.exists():
+            continue
+        try:
+            df = pd.read_csv(pth)
+        except Exception as exc:  # pragma: no cover - defensive
+            print(f"[combine_babe_all] Failed to read {pth}: {exc}")
+            continue
+        if not {"text", "label"}.issubset(df.columns):
+            print(f"[combine_babe_all] Unexpected columns in {pth}: {df.columns.tolist()}")
+            continue
+        parts.append(df[["text", "label"]])
+
+    if not parts:
+        print("[combine_babe_all] No BABE partial CSVs found; skipping babe_all.csv generation.")
+        return
+
+    out_df = (
+        pd.concat(parts, axis=0, ignore_index=True)
+        .drop_duplicates(subset=["text"])
+        .reset_index(drop=True)
+    )
+
+    output_path = babe_root / "babe_all.csv"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(output_path, index=False, encoding="utf-8")
+    print(f"[combine_babe_all] Wrote {len(out_df)} rows to {output_path}")
+
 
 def main() -> int:
     """
@@ -121,6 +230,8 @@ def main() -> int:
     """
     convert_labelled_corpus()
     convert_babe_neutral()
+    convert_babe_lrc()
+    combine_babe_all()
     return 0
 
 

@@ -1,5 +1,20 @@
 from __future__ import annotations
 
+"""
+Create stratified train/validation/test splits from a combined training CSV.
+
+Given ``data/train.csv`` (or a custom input path), this script:
+  * Performs a label‑stratified split into train/val/test according to the
+    requested fractions.
+  * Writes the splits to ``data/train_split.csv``, ``data/val_split.csv``,
+    and ``data/test_split.csv``.
+  * Prints a JSON summary of row counts and label counts per split so you can
+    see how the data is distributed.
+
+No over/undersampling happens here; if you want balanced labels, first run
+``prepare_kaggle_data.py --balance_labels`` to create a balanced train CSV.
+"""
+
 import argparse
 import json
 import random
@@ -17,12 +32,13 @@ def stratified_split(
     seed: int,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
-    Split a dataframe into train/val/test sets while preserving class ratios per label.
+    Split a dataframe into train/val/test sets while preserving class ratios
+    per label (stratified split).
 
-    The resulting training split is then balanced by oversampling minority
-    classes (including Neutral) so that each label appears roughly equally
-    often in the training data. Validation and test splits keep the original
-    distribution.
+    No additional over/undersampling is performed here – the output splits
+    reflect the label distribution already present in ``df``. If you want
+    balanced labels, run ``prepare_kaggle_data.py --balance_labels`` before
+    calling this script.
     """
     rng = random.Random(seed)
 
@@ -54,25 +70,6 @@ def stratified_split(
     train_df = pd.concat(train_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
     val_df = pd.concat(val_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
     test_df = pd.concat(test_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
-
-    # Oversample minority classes (especially Neutral) in the training split
-    # so training sees a more balanced label distribution.
-    counts = train_df[label_col].value_counts().to_dict()
-    if counts:
-        max_count = max(counts.values())
-        balanced_parts = []
-        for label, count in counts.items():
-            subset = train_df[train_df[label_col] == label]
-            if count < max_count and not subset.empty:
-                # Sample with replacement to match the majority class size.
-                extra = subset.sample(n=max_count - count, replace=True, random_state=seed)
-                subset = pd.concat([subset, extra], axis=0)
-            balanced_parts.append(subset)
-        train_df = (
-            pd.concat(balanced_parts, axis=0)
-            .sample(frac=1.0, random_state=seed)
-            .reset_index(drop=True)
-        )
 
     return train_df, val_df, test_df
 
@@ -115,14 +112,31 @@ def main() -> int:
     test_df.to_csv(test_path, index=False)
 
     summary: Dict[str, Dict[str, int]] = {
+        "input_path": str(Path(args.input).resolve()),
+        "label_col": args.label_col,
         "total_rows": len(df),
         "label_counts": label_counts,
+        "params": {
+            "train_frac": args.train_frac,
+            "val_frac": args.val_frac,
+            "seed": args.seed,
+        },
         "splits": {
-            "train": train_df[args.label_col].value_counts().to_dict(),
-            "val": val_df[args.label_col].value_counts().to_dict(),
-            "test": test_df[args.label_col].value_counts().to_dict(),
+            "train": {
+                "rows": len(train_df),
+                "label_counts": train_df[args.label_col].value_counts().to_dict(),
+            },
+            "val": {
+                "rows": len(val_df),
+                "label_counts": val_df[args.label_col].value_counts().to_dict(),
+            },
+            "test": {
+                "rows": len(test_df),
+                "label_counts": test_df[args.label_col].value_counts().to_dict(),
+            },
         },
     }
+
     print(json.dumps(summary, indent=2))
     print(f"Wrote splits to: {train_path}, {val_path}, {test_path}")
     return 0

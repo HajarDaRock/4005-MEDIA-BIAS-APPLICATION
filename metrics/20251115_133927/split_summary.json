@@ -1,0 +1,41 @@
+{
+  "input_path": "C:\\Users\\hajar\\New folder\\data\\train.csv",
+  "label_col": "label",
+  "total_rows": 32604,
+  "label_counts": {
+    "Right": 10868,
+    "Left": 10868,
+    "Neutral": 10868
+  },
+  "params": {
+    "train_frac": 0.7,
+    "val_frac": 0.15,
+    "seed": 42
+  },
+  "splits": {
+    "train": {
+      "rows": 22824,
+      "label_counts": {
+        "Neutral": 7608,
+        "Right": 7608,
+        "Left": 7608
+      }
+    },
+    "val": {
+      "rows": 4890,
+      "label_counts": {
+        "Left": 1630,
+        "Neutral": 1630,
+        "Right": 1630
+      }
+    },
+    "test": {
+      "rows": 4890,
+      "label_counts": {
+        "Left": 1630,
+        "Neutral": 1630,
+        "Right": 1630
+      }
+    }
+  }
+}
