@@ -1,0 +1,55 @@
+{
+  "timestamp": "20251115_002514",
+  "val_loss": 0.5426497620181682,
+  "val_acc": 0.7880200860832137,
+  "config": {
+    "epochs": 8,
+    "batch_size": 64,
+    "max_len": 700,
+    "min_freq": 2,
+    "lr": 0.001,
+    "embedding_dim": 100,
+    "num_filters": 100,
+    "filter_sizes": [
+      3,
+      4,
+      5
+    ],
+    "dropout": 0.5,
+    "stratify": true,
+    "val_frac": 0.1
+  },
+  "report": {
+    "Left": {
+      "precision": 0.7376943005181347,
+      "recall": 0.9075697211155378,
+      "f1-score": 0.8138620936048588,
+      "support": 1255.0
+    },
+    "Right": {
+      "precision": 0.8970775095298602,
+      "recall": 0.7152988855116514,
+      "f1-score": 0.7959413754227734,
+      "support": 987.0
+    },
+    "Neutral": {
+      "precision": 0.7702407002188184,
+      "recall": 0.6446886446886447,
+      "f1-score": 0.7018943170488534,
+      "support": 546.0
+    },
+    "accuracy": 0.7880200860832137,
+    "macro avg": {
+      "precision": 0.8016708367556045,
+      "recall": 0.755852417105278,
+      "f1-score": 0.7705659286921618,
+      "support": 2788.0
+    },
+    "weighted avg": {
+      "precision": 0.8004925650558486,
+      "recall": 0.7880200860832137,
+      "f1-score": 0.7855901585814381,
+      "support": 2788.0
+    }
+  }
+}

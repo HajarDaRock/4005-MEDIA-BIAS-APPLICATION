@@ -1,5 +1,5 @@
 @echo off
-REM Runs the PowerShell quickstart with execution policy bypass.
+REM 
 setlocal
 set SCRIPT_DIR=%~dp0
 powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%quickstart.ps1"

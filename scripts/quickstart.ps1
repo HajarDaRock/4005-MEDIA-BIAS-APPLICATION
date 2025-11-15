@@ -1,5 +1,6 @@
 <#
 Quickstart (Kaggle preferred):
+ - Assumes PyTorch is installed (CUDA build recommended for NVIDIA GPUs; see https://pytorch.org/get-started/locally/)
  - Tries to download and prepare Kaggle datasets into data/train.csv
  - Falls back to sample data if Kaggle not configured or no CSVs found
  - Trains and starts the API
@@ -20,7 +21,8 @@ $datasetSources = @(
   'gandpablo/news-articles-for-political-bias-classification',
   'timospinde/mbib-media-bias-identification-benchmark',
   'newsanalysis/political-bias-in-mainstream-media',
-  'tegmark/mediabias'
+  'tegmark/mediabias',
+  'timospinde/babe-media-bias-annotations-by-experts'
 )
 Write-Host 'Targeted Kaggle datasets:' -ForegroundColor Cyan
 foreach ($src in $datasetSources) {
@@ -153,14 +155,14 @@ if (-not $didKaggle) {
   Write-Host 'Skipping Kaggle download.' -ForegroundColor Yellow
 }
 
-# 2b) Convert labelled corpus (folder of .txt files) into a CSV
+# 2b) Convert non-CSV datasets (labelled corpus, BABE neutral) into CSVs
 $labelledCorpusRoot = 'data/labelled-corpus-political-bias-hugging-face'
 if (Test-Path $labelledCorpusRoot) {
   try {
-    Write-Host 'Flattening labelled-corpus text files...' -ForegroundColor Cyan
-    python (Join-Path $here 'convert_labelled_corpus.py')
+    Write-Host 'Converting non-CSV datasets to CSV (labelled corpus, BABE neutral)...' -ForegroundColor Cyan
+    python (Join-Path $here 'convert_datasets_tocsv.py')
   } catch {
-    Write-Host "Labelled corpus conversion failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "Dataset conversion failed: $($_.Exception.Message)" -ForegroundColor Yellow
   }
 }
 
@@ -173,7 +175,8 @@ if ($didKaggle) {
       'data/news-articles-for-political-bias-classification/**/*.csv',
       'data/mbib-media-bias-identification-benchmark/**/*.csv',
       'data/political-bias-in-mainstream-media/**/*.csv',
-      'data/mediabias/**/*.csv'
+      'data/mediabias/**/*.csv',
+      'data/babe-media-bias-annotations-by-experts/**/*.csv'
     )
     $args = @('--inputs') + $inputs + @('--output','data/train.csv')
     python prepare_kaggle_data.py @args
@@ -205,7 +208,7 @@ if (Test-Path 'data/train.csv') {
 
 # 5) Build train/val/test splits for refinement & metrics
 $splitScript = Join-Path $here 'split_dataset.py'
-if (Test-Path 'data/train.csv' -and (Test-Path $splitScript)) {
+if ((Test-Path 'data/train.csv') -and (Test-Path $splitScript)) {
   try {
     Write-Host 'Generating stratified data/train_split.csv, data/val_split.csv, data/test_split.csv...' -ForegroundColor Cyan
     python $splitScript --input data/train.csv --output_dir data --train_frac 0.7 --val_frac 0.15 --seed 42
@@ -217,7 +220,8 @@ if (Test-Path 'data/train.csv' -and (Test-Path $splitScript)) {
 }
 
 # 6) Train (faster epochs for demo if using sample)
-$trainingSeed = Get-Random -Minimum 1 -Maximum [int]::MaxValue
+$maxInt = [int]::MaxValue
+$trainingSeed = Get-Random -Minimum 1 -Maximum $maxInt
 Write-Host "Using randomized training seed: $trainingSeed" -ForegroundColor Cyan
 $usingSample = $false
 try {
@@ -232,8 +236,8 @@ if ($usingSample) {
   python train_textcnn.py --epochs 2 --batch_size 8 --max_len 200 --seed $trainingSeed
 } else {
   Write-Host 'Training model on Kaggle combined dataset...' -ForegroundColor Cyan
-  Write-Host 'Hyperparameters -> epochs=8 batch_size=64 max_len=700' -ForegroundColor DarkCyan
-  python train_textcnn.py --epochs 8 --batch_size 64 --max_len 700 --seed $trainingSeed
+  Write-Host 'Hyperparameters -> epochs=10 batch_size=64 max_len=700' -ForegroundColor DarkCyan
+  python train_textcnn.py --epochs 10 --batch_size 64 --max_len 700 --seed $trainingSeed
 }
 
 # 7) Start API

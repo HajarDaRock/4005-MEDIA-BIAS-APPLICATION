@@ -30,7 +30,8 @@ $datasets = @(
   @{ id = 'gandpablo/news-articles-for-political-bias-classification';    dir = 'data/news-articles-for-political-bias-classification' },
   @{ id = 'timospinde/mbib-media-bias-identification-benchmark';           dir = 'data/mbib-media-bias-identification-benchmark' },
   @{ id = 'newsanalysis/political-bias-in-mainstream-media';               dir = 'data/political-bias-in-mainstream-media' },
-  @{ id = 'tegmark/mediabias';                                             dir = 'data/mediabias' }
+  @{ id = 'tegmark/mediabias';                                             dir = 'data/mediabias' },
+  @{ id = 'timospinde/babe-media-bias-annotations-by-experts';             dir = 'data/babe-media-bias-annotations-by-experts' }
 )
 
 foreach ($ds in $datasets) {

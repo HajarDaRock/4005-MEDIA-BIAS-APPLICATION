@@ -30,6 +30,10 @@ DATASETS = [
         "id": "tegmark/mediabias",
         "dir": "data/mediabias",
     },
+    {
+        "id": "timospinde/babe-media-bias-annotations-by-experts",
+        "dir": "data/babe-media-bias-annotations-by-experts",
+    },
 ]
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -19,15 +19,10 @@ def stratified_split(
     """
     Split a dataframe into train/val/test sets while preserving class ratios per label.
 
-    Args:
-        df: Full dataframe to split.
-        label_col: Column name holding the class labels.
-        train_frac: Fraction of each class assigned to the training split.
-        val_frac: Fraction of each class assigned to the validation split.
-        seed: RNG seed for deterministic shuffling.
-
-    Returns:
-        Tuple of (train_df, val_df, test_df) dataframes.
+    The resulting training split is then balanced by oversampling minority
+    classes (including Neutral) so that each label appears roughly equally
+    often in the training data. Validation and test splits keep the original
+    distribution.
     """
     rng = random.Random(seed)
 
@@ -59,6 +54,26 @@ def stratified_split(
     train_df = pd.concat(train_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
     val_df = pd.concat(val_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
     test_df = pd.concat(test_rows).sample(frac=1.0, random_state=seed).reset_index(drop=True)
+
+    # Oversample minority classes (especially Neutral) in the training split
+    # so training sees a more balanced label distribution.
+    counts = train_df[label_col].value_counts().to_dict()
+    if counts:
+        max_count = max(counts.values())
+        balanced_parts = []
+        for label, count in counts.items():
+            subset = train_df[train_df[label_col] == label]
+            if count < max_count and not subset.empty:
+                # Sample with replacement to match the majority class size.
+                extra = subset.sample(n=max_count - count, replace=True, random_state=seed)
+                subset = pd.concat([subset, extra], axis=0)
+            balanced_parts.append(subset)
+        train_df = (
+            pd.concat(balanced_parts, axis=0)
+            .sample(frac=1.0, random_state=seed)
+            .reset_index(drop=True)
+        )
+
     return train_df, val_df, test_df
 
 
