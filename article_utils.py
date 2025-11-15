@@ -7,7 +7,8 @@ restricted_outlets = [
     'thehill.com',
     'ctvnews.ca',
     'ipsos.com',
-    'nytimes.com'
+    'nytimes.com',
+    'foxnews.com'
 ]
 
 def is_restricted_url(url):

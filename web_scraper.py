@@ -1,89 +1,140 @@
-# This file is for manually inputting links. It is used for finding the bias rating of each news outlet and for general testing
-# without needing to run the FastAPI frontend.
-# To run this file alone, you can click the |> button in the top right corner of the code editor.
+# This file is for allowing a front end to manually input and search for bias in links. 
+# It is used for finding the bias rating of each news outlet and for general testing without needing to run the FastAPI frontend.
+
+import argparse
+import os
+from typing import List
 
 import pandas as pd
 from openpyxl import load_workbook
-import os
-from article_utils import fetch_article, is_restricted_url, restricted_outlets
+
+from article_utils import fetch_article, is_restricted_url
 from classify_articles import classify_bias
 
-# Initializing the Excel file and sheet names
-# This is where the data will be saved.
-excel_file = "ExtractedData.xlsx"
-full_sheet = 'Sheet1'
-summary_sheet = 'Sheet2'
 
-# You can put a list of articles here and run this file individually to get their rating. Does not require front end running       
-article_urls = [ 
-    'https://ottawa.citynews.ca/2025/03/29/carney-campaigning-in-his-ottawa-riding-today-poilievre-in-winnipeg/', 
-    'https://vocm.com/2025/04/05/266777/',
-    'https://www.cbc.ca/news/politics/singh-promises-more-doctors-carney-supports-the-trades-poilievre-vows-to-cut-red-tape-1.7502992',
-    'https://nationalpost.com/news/politics/federal_election/less-red-tape-more-trades-workers-and-doctors-for-all-on-campaign-day-14',
-    'https://www.theglobeandmail.com/politics/article-singh-promises-to-add-up-to-7500-family-doctors-in-the-next-five-years/',
-    'https://globalnews.ca/news/11116941/carney-singh-pledge-support-for-cbc-radio-canada-amid-u-s-threats/',
-]
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Classify article bias without running the API.")
+    parser.add_argument(
+        "--url",
+        action="append",
+        help="Article URL to process. Use multiple --url flags for multiple links.",
+    )
+    parser.add_argument(
+        "--file",
+        help="Path to a text file containing one article URL per line.",
+    )
+    parser.add_argument(
+        "--excel",
+        default="ExtractedData.xlsx",
+        help="Path to the Excel workbook to append results to (default: ExtractedData.xlsx).",
+    )
+    parser.add_argument(
+        "--full-sheet",
+        default="Sheet1",
+        help="Sheet name for detailed rows (default: Sheet1).",
+    )
+    parser.add_argument(
+        "--summary-sheet",
+        default="Sheet2",
+        help="Sheet name for summary rows (default: Sheet2).",
+    )
+    return parser.parse_args()
 
-# Lists to hold data to be written into Excel
-new_full_data = []
-new_summary_data = []
 
-# Loop through each URL and process it
-for url in article_urls:
-    # Check if the URL is from a restricted outlet and skip it if so
-    if is_restricted_url(url):
-        print(f"Access restricted: {url}")
-        continue
+def load_urls_from_file(path: str) -> List[str]:
+    urls: List[str] = []
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"URL file not found: {path}")
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            value = line.strip()
+            if value:
+                urls.append(value)
+    return urls
 
-    title, content = fetch_article(url)
-    if title and content:
-        raw_response = classify_bias(content) or ""  
+
+def resolve_urls(args: argparse.Namespace) -> List[str]:
+    urls: List[str] = []
+    if args.url:
+        urls.extend(u.strip() for u in args.url if u.strip())
+    if args.file:
+        urls.extend(load_urls_from_file(args.file))
+
+    if urls:
+        return urls
+
+    print("No URLs provided via --url or --file. Enter URLs manually (blank line to finish):")
+    while True:
+        value = input("> ").strip()
+        if not value:
+            break
+        urls.append(value)
+    return urls
+
+
+def write_to_excel(full_df: pd.DataFrame, summary_df: pd.DataFrame, excel_path: str, full_sheet: str, summary_sheet: str) -> None:
+    if full_df.empty:
+        print("No rows to persist; skipping Excel update.")
+        return
+
+    if os.path.exists(excel_path):
+        book = load_workbook(excel_path)
+        with pd.ExcelWriter(excel_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+            if full_sheet in book.sheetnames:
+                startrow_full = book[full_sheet].max_row
+                full_df.to_excel(writer, sheet_name=full_sheet, index=False, header=startrow_full == 1, startrow=startrow_full)
+            else:
+                full_df.to_excel(writer, sheet_name=full_sheet, index=False)
+
+            if summary_sheet in book.sheetnames:
+                startrow_summary = book[summary_sheet].max_row
+                summary_df.to_excel(writer, sheet_name=summary_sheet, index=False, header=startrow_summary == 1, startrow=startrow_summary)
+            else:
+                summary_df.to_excel(writer, sheet_name=summary_sheet, index=False)
+    else:
+        with pd.ExcelWriter(excel_path, engine="openpyxl") as writer:
+            full_df.to_excel(writer, sheet_name=full_sheet, index=False)
+            summary_df.to_excel(writer, sheet_name=summary_sheet, index=False)
+
+
+def main() -> int:
+    args = parse_args()
+    urls = resolve_urls(args)
+    if not urls:
+        print("No URLs supplied. Exiting.")
+        return 0
+
+    new_full_data = []
+    new_summary_data = []
+
+    for url in urls:
+        if is_restricted_url(url):
+            print(f"Access restricted: {url}")
+            continue
+
+        title, content = fetch_article(url)
+        if not (title and content):
+            print(f"Unable to fetch article content: {url}")
+            continue
+
+        raw_response = classify_bias(content) or ""
         bias = raw_response.strip().capitalize() if raw_response.strip() else "Unknown"
 
-        # Print the results for each article
-        print(f"\nRaw model output: '{raw_response}'")
+        print(f"\nURL: {url}")
+        print(f"Raw model output: '{raw_response}'")
         print(f"Final bias classification: {bias}\n")
 
-        # Collect full and summary data
-        new_full_data.append({
-            'Title': title,
-            'Content': content,
-            'URL': url,
-            'Bias': bias,
-            'RawOutput': raw_response
-        })
+        new_full_data.append(
+            {"Title": title, "Content": content, "URL": url, "Bias": bias, "RawOutput": raw_response}
+        )
+        new_summary_data.append({"Title": title, "Bias": bias, "RawOutput": raw_response})
 
-        new_summary_data.append({
-            'Title': title,
-            'Bias': bias,
-            'RawOutput': raw_response
-        })
+    df_full = pd.DataFrame(new_full_data)
+    df_summary = pd.DataFrame(new_summary_data)
+    write_to_excel(df_full, df_summary, args.excel, args.full_sheet, args.summary_sheet)
+    print(f"\nProcessed {len(new_full_data)} articles. Results saved to '{args.excel}'.")
+    return 0
 
-df_full = pd.DataFrame(new_full_data)
-df_summary = pd.DataFrame(new_summary_data)
 
-if os.path.exists(excel_file):
-    book = load_workbook(excel_file)
-
-    # Append data to existing sheets or create new ones if they don't exist
-    with pd.ExcelWriter(excel_file, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
-        if full_sheet in book.sheetnames:
-            startrow_full = book[full_sheet].max_row
-            df_full.to_excel(writer, sheet_name=full_sheet, index=False, header=startrow_full == 1, startrow=startrow_full)
-        else:
-            df_full.to_excel(writer, sheet_name=full_sheet, index=False)
-
-        if summary_sheet in book.sheetnames:
-            startrow_summary = book[summary_sheet].max_row
-            df_summary.to_excel(writer, sheet_name=summary_sheet, index=False, header=startrow_summary == 1, startrow=startrow_summary)
-        else:
-            df_summary.to_excel(writer, sheet_name=summary_sheet, index=False)
-
-else:
-    # If the file doesn't exist, create it and write the data
-    with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
-        df_full.to_excel(writer, sheet_name=full_sheet, index=False)
-        df_summary.to_excel(writer, sheet_name=summary_sheet, index=False)
-
-# Save the new data to the Excel file
-print(f"\nSaved {len(new_full_data)} articles to '{excel_file}' in sheets '{full_sheet}' and '{summary_sheet}'.")
+if __name__ == "__main__":
+    raise SystemExit(main())

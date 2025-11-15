@@ -4,9 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from article_utils import fetch_article, is_restricted_url, restricted_outlets
+from article_utils import fetch_article, is_restricted_url
 from classify_articles import classify_bias
-from urllib.parse import urlparse
 
 import pandas as pd
 from openpyxl import load_workbook
@@ -61,11 +60,10 @@ async def classify_url(request: Request):
             )
 
         # Check if the URL is restricted
-        domain = urlparse(url).netloc.replace("www.", "")
-        if any(outlet in domain for outlet in restricted_outlets):
-            print(f"[BLOCKED] Restricted domain: {domain}")
+        if is_restricted_url(url):
+            print(f"[BLOCKED] Restricted domain: {url}")
             return JSONResponse(
-                content={"error": f"Access denied: Articles from '{domain}' are not supported."},
+                content={"error": "Access denied: this outlet is not supported."},
                 status_code=403
             )
 

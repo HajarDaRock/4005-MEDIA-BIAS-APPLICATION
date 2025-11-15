@@ -10,10 +10,8 @@
     </head>
 
 <body class="body">
-    <!-- Main header -->
     <h1 class="header">Canadian Media Bias Checker</h1>
 
-    <!-- Navigation bar -->
     <nav id="main-nav"> 
         <ul>
             <li><a href="/" class="active">Home</a></li>
@@ -23,27 +21,9 @@
 
     <div class="content">
         <!-- Search Bias Rating Section -->
-        <h2 class="subheading" style="text-align: center;">Search Bias Rating</h2>
+        <h2 class="subheading" style="text-align: center;">Check Bias from URL</h2>
 
         <div class="search-section">
-            <!-- Dropdown for selecting media outlet -->
-            <div class="dropdown-section">
-                <label><strong>Outlet Name:</strong></label>
-                <div class="inline-group">
-                    <select id="outletSelect">
-                        <option value="">- Choose an outlet -</option>
-                        <option value="Global News">Global News</option>
-                        <option value="City News">City News</option>
-                        <option value="The Globe and Mail">The Globe and Mail</option>
-                        <option value="National Post">National Post</option>
-                        <option value="Business Insider">Business Insider</option>
-                        <option value="CBC News">CBC News</option>
-                    </select>
-                    <!-- Button to check outlet bias -->
-                    <button class="small-btn" onclick="checkOutletBias()">Show Outlet Bias</button>
-                </div>
-            </div>
-            <br>
             <!-- Input field for article URL -->
             <div class="input-field">
                 <label><strong>URL of a news article:</strong></label>
@@ -146,45 +126,9 @@
             }
         }
     
-        // Function to check bias of a selected media outlet
-        function checkOutletBias() {
-            const outlet = document.getElementById('outletSelect').value;
-            const resultDiv = document.getElementById('result');
-            const resultLabel = document.getElementById('result-label');
-            const errorDiv = document.getElementById('error');
-    
-            // Reset result and error display
-            resultLabel.style.display = "none";
-            errorDiv.style.display = "none";
-            resultDiv.textContent = "";
-    
-            // Predefined outlet bias ratings
-            const outletRatings = {
-                "Global News": "Neutral",
-                "City News": "Left-Neutral",
-                "The Globe and Mail": "Left",
-                "National Post": "Neutral",
-                "Business Insider": "Left",
-                "CBC News": "Left-Neutral"
-            };
-    
-            // Validate outlet selection
-            if (!outlet) {
-                errorDiv.textContent = "Please select a media outlet.";
-                errorDiv.style.display = "block";
-                return;
-            }
-    
-            // Display bias rating
-            const rating = outletRatings[outlet] || "Unrated";
-            resultDiv.textContent = rating;
-            resultLabel.style.display = "block";
-        }
-
         // Function to reset the form and clear results
         function resetForm() {
             document.getElementById('urlInput').value = "";
-            document.getElementById('outletSelect').selectedIndex = 0;
 
             document.getElementById('result').textContent = "";
             document.getElementById('result-label').style.display = "none";

@@ -95,7 +95,7 @@ def classify_bias(article_text: str) -> str:
         if _MODEL is None or _CONFIG is None or _VOCAB is None:
             return "Model not available. Please train using train_textcnn.py."
 
-        max_len = int(_CONFIG.get("max_len", 400))
+        max_len = int(_CONFIG.get("max_len", 1000))
         lowercase = bool(_CONFIG.get("lowercase", True))
         pad_id = int(_CONFIG.get("pad_id", 0))
         unk_id = int(_CONFIG.get("unk_id", 1))

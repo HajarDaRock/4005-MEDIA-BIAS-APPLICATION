@@ -17,6 +17,13 @@ TEXT_CANDIDATES = [
     "content_text",
     "news",
     "document",
+    "page_text",
+    "body_text",
+    "statement",
+    "text_body",
+    "text_without_stopwords",
+    "clean_text",
+    "combined_text",
 ]
 
 TITLE_CANDIDATES = [
@@ -46,6 +53,7 @@ LEFT_TOKENS = {
     "left",
     "leanleft",
     "leftleaning",
+    "leaningleft",
     "leftofcenter",
     "centreleft",
     "centerleft",
@@ -60,6 +68,7 @@ RIGHT_TOKENS = {
     "right",
     "leanright",
     "rightleaning",
+    "leaningright",
     "rightofcenter",
     "centreright",
     "centerright",
@@ -185,9 +194,12 @@ def main():
     # Expand globs
     files: List[str] = []
     for pat in args.inputs:
-        matched = glob.glob(pat)
-        if not matched and os.path.isdir(pat):
-            matched = glob.glob(os.path.join(pat, "*.csv"))
+        # Support recursive globs like **/*.csv
+        matched = glob.glob(pat, recursive=True)
+        # If a directory is provided, search recursively for CSVs
+        if (not matched) and os.path.isdir(pat):
+            for root, _dirs, _files in os.walk(pat):
+                matched.extend(glob.glob(os.path.join(root, "*.csv")))
         files.extend(matched)
 
     if not files:

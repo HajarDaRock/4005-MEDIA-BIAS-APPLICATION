@@ -1,0 +1,35 @@
+<#
+Quickstart: trains with sample data if data/train.csv missing, then runs the API.
+
+Usage:
+  pwsh -File scripts/quickstart.ps1
+#>
+
+$ErrorActionPreference = 'Stop'
+
+if (-not (Test-Path 'data')) { New-Item -Force -ItemType Directory -Path 'data' | Out-Null }
+
+# Install requirements
+if (Test-Path 'requirements.txt') {
+  Write-Host 'Installing requirements...' -ForegroundColor Cyan
+  pip install -r requirements.txt | Out-Null
+}
+
+# Ensure a training CSV exists
+if (-not (Test-Path 'data/train.csv')) {
+  if (Test-Path 'data/sample_train.csv') {
+    Write-Host 'No data/train.csv found. Using sample dataset.' -ForegroundColor Yellow
+    Copy-Item 'data/sample_train.csv' 'data/train.csv' -Force
+  } else {
+    Write-Host 'No training CSV available. Please create data/train.csv.' -ForegroundColor Red
+    exit 1
+  }
+}
+
+Write-Host 'Training model...' -ForegroundColor Cyan
+python train_textcnn.py --epochs 2 --batch_size 8 --max_len 1000
+
+Write-Host 'Starting API at http://127.0.0.1:8000' -ForegroundColor Green
+uvicorn main:app --reload
+
+

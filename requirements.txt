@@ -1,0 +1,13 @@
+torch
+pandas
+fastapi
+uvicorn
+requests
+beautifulsoup4
+openpyxl
+jinja2
+aiofiles
+scikit-learn
+matplotlib
+kaggle
+kagglehub
