@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 try:
     import torch
@@ -12,6 +12,11 @@ except Exception as _torch_err:
     nn = None  # type: ignore
     F = None  # type: ignore
 
+try:
+    import torch_directml  # type: ignore
+except Exception:
+    torch_directml = None  # type: ignore
+
 # Local TextCNN definition will be in models/textcnn.py
 try:
     from models.textcnn import TextCNN
@@ -19,8 +24,21 @@ except Exception as e:
     TextCNN = None  # Will be checked at runtime
 
 
+def _resolve_device() -> Optional["torch.device"]:
+    if torch is None:
+        return None
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch_directml is not None:
+        try:
+            return torch_directml.device()
+        except Exception:
+            pass
+    return torch.device("cpu")
+
+
 _MODEL = None
-_DEVICE = None if torch is None else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_DEVICE = _resolve_device()
 _CONFIG: Dict = None
 _VOCAB: Dict[str, int] = None
 
@@ -64,9 +82,10 @@ def _load_artifacts():
             dropout=float(_CONFIG.get("dropout", 0.5)),
             padding_idx=int(_CONFIG.get("pad_id", 0)),
         )
-        state = torch.load(weights_path, map_location=_DEVICE)
+        state = torch.load(weights_path, map_location="cpu")
         model.load_state_dict(state)
-        model.to(_DEVICE)
+        if _DEVICE is not None:
+            model.to(_DEVICE)
         model.eval()
         _MODEL = model
         print("[MODEL] TextCNN loaded successfully.")

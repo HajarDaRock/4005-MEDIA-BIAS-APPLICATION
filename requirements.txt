@@ -11,3 +11,4 @@ scikit-learn
 matplotlib
 kaggle
 kagglehub
+torch-directml; platform_system == "Windows"

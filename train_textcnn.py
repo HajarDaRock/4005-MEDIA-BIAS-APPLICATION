@@ -31,6 +31,12 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from models.textcnn import TextCNN
 
+# Optional DirectML backend for AMD/Intel GPUs on Windows
+try:
+    import torch_directml  # type: ignore
+except Exception:  # pragma: no cover - DirectML is optional
+    torch_directml = None  # type: ignore
+
 # Evaluation/plots
 try:
     from sklearn.metrics import classification_report, precision_recall_fscore_support, confusion_matrix
@@ -45,6 +51,35 @@ def set_seed(seed: int = 42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
+
+def resolve_device(requested: Optional[str] = None):
+    """
+    Pick the best available torch device.
+
+    Priority order:
+      1. Explicit CLI flag (--device cpu/cuda/dml/...)
+      2. CUDA-capable GPU
+      3. DirectML (torch-directml) for AMD/Intel GPUs on Windows
+      4. CPU
+    """
+    if requested:
+        normalized = requested.strip().lower()
+        if normalized in {"dml", "directml"}:
+            if torch_directml is None:
+                raise ValueError("torch-directml is not installed, cannot use --device dml")
+            return torch_directml.device()
+        return torch.device(requested)
+
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+
+    if torch_directml is not None:
+        try:
+            return torch_directml.device()
+        except Exception:
+            pass
+
+    return torch.device("cpu")
 
 def simple_tokenize(text: str, lowercase: bool = True) -> List[str]:
     if not isinstance(text, str):
@@ -273,7 +308,11 @@ def main():
     parser.add_argument("--stratify", type=lambda s: str(s).lower() not in {"0","false","no","n"}, default=True, help="Stratify train/val split by label (default: True)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output_dir", default="models")
-    parser.add_argument("--device", default=None, help="cpu or cuda; default auto")
+    parser.add_argument(
+        "--device",
+        default=None,
+        help="Device override (cpu, cuda, dml/directml, etc.). Defaults to GPU when available.",
+    )
     parser.add_argument(
         "--use_lr_scheduler",
         type=lambda s: str(s).lower() not in {"0", "false", "no", "n"},
@@ -313,7 +352,7 @@ def main():
 
     set_seed(args.seed)
 
-    device = torch.device(args.device) if args.device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = resolve_device(args.device)
 
     # Ensure training CSV exists or guide the user clearly
     if not os.path.exists(args.train_csv):
