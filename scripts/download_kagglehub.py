@@ -1,3 +1,10 @@
+"""
+Downloads all required Kaggle datasets for the project using kagglehub.
+
+This script iterates through a predefined list of Kaggle dataset IDs,
+downloads them using the kagglehub library, and unpacks them into
+the 'data/' directory, organizing each into its own subdirectory.
+"""
 from __future__ import annotations
 
 import os
@@ -70,6 +77,9 @@ def materialize_dataset(download_path: Path, destination: Path) -> None:
 
 
 def main() -> int:
+    """
+    Main function to download and set up all datasets.
+    """
     ROOT.joinpath("data").mkdir(exist_ok=True)
     for dataset in DATASETS:
         dataset_id = dataset["id"]

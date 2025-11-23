@@ -117,6 +117,7 @@ NEUTRAL_TOKENS = {
 
 
 def normalize_label_str(s: str) -> str:
+    """Collapses a string by removing whitespace and separators, and converting to lowercase."""
     s = s.strip().lower()
     # collapse separators
     s = re.sub(r"[\s\-_/]+", "", s)
@@ -124,6 +125,12 @@ def normalize_label_str(s: str) -> str:
 
 
 def map_label(val, num_map: Optional[Dict[int, str]] = None) -> Optional[str]:
+    """
+    Normalizes a raw label value into one of 'Left', 'Right', or 'Neutral'.
+    
+    Handles numeric labels via an optional mapping, and string labels by checking
+    against a set of known tokens.
+    """
     if pd.isna(val):
         return None
     # numeric mapping first if provided
@@ -148,6 +155,7 @@ def map_label(val, num_map: Optional[Dict[int, str]] = None) -> Optional[str]:
 
 
 def pick_column(df: pd.DataFrame, candidates: List[str]) -> Optional[str]:
+    """Finds the first matching column name from a list of candidates in a DataFrame."""
     cols = {c.lower(): c for c in df.columns}
     for c in candidates:
         if c in cols:
@@ -175,6 +183,10 @@ def combine_title_text(df: pd.DataFrame, outlet_col: Optional[str], title_col: O
 
 
 def parse_num_map(s: Optional[str]) -> Optional[Dict[int, str]]:
+    """
+    Parses a comma-separated string of 'key:value' pairs into a dictionary.
+    Example: "0:Left,1:Right" -> {0: 'Left', 1: 'Right'}
+    """
     if not s:
         return None
     mapping: Dict[int, str] = {}
@@ -194,6 +206,13 @@ def parse_num_map(s: Optional[str]) -> Optional[Dict[int, str]]:
 
 
 def process_file(path: str, num_map: Optional[Dict[int, str]]) -> pd.DataFrame:
+    """
+    Reads a single CSV file, extracts and normalizes text and label columns,
+    and returns a cleaned DataFrame.
+    
+    This function uses heuristics to find the correct columns for text, title,
+    outlet, and labels based on predefined candidate names.
+    """
     try:
         df = pd.read_csv(path, low_memory=False)
     except Exception as e:
@@ -202,7 +221,6 @@ def process_file(path: str, num_map: Optional[Dict[int, str]]) -> pd.DataFrame:
 
     text_col = pick_column(df, TEXT_CANDIDATES)
     if not text_col:
-        # try to build from multiple columns if available
         print(f"[WARN] No standard text column in {path}. Available: {df.columns.tolist()}")
         return pd.DataFrame(columns=["text", "label"])
 

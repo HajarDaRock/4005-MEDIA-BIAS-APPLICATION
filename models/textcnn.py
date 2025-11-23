@@ -4,6 +4,13 @@ import torch.nn.functional as F
 
 
 class TextCNN(nn.Module):
+    """
+    A Text-based Convolutional Neural Network (TextCNN) for classification.
+
+    This architecture uses an embedding layer followed by parallel convolutional
+    layers with different kernel sizes. The outputs are passed through a max-over-time
+    pooling layer, concatenated, and fed into a final fully-connected layer.
+    """
     def __init__(
         self,
         vocab_size: int,
@@ -14,6 +21,16 @@ class TextCNN(nn.Module):
         dropout: float = 0.5,
         padding_idx: int = 0,
     ):
+        """
+        Args:
+            vocab_size: The size of the vocabulary.
+            embed_dim: The dimensionality of the word embeddings.
+            num_classes: The number of output classes.
+            filter_sizes: A list of kernel sizes for the convolutional layers.
+            num_filters: The number of filters for each convolutional layer.
+            dropout: The dropout rate.
+            padding_idx: The index of the padding token in the vocabulary.
+        """
         super().__init__()
         if filter_sizes is None:
             filter_sizes = [3, 4, 5]
@@ -25,6 +42,15 @@ class TextCNN(nn.Module):
         self.fc = nn.Linear(num_filters * len(filter_sizes), num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Defines the forward pass of the TextCNN.
+
+        Args:
+            x: Input tensor of shape (batch, seq_len).
+
+        Returns:
+            Output logits tensor of shape (batch, num_classes).
+        """
         # x: (batch, seq_len)
         emb = self.embedding(x)  # (batch, seq_len, embed_dim)
         emb = emb.transpose(1, 2)  # (batch, embed_dim, seq_len)

@@ -1,5 +1,14 @@
-# This file is for allowing a front end to manually input and search for bias in links. 
-# It is used for finding the bias rating of each news outlet and for general testing without needing to run the FastAPI frontend.
+"""
+A command-line utility for classifying the political bias of news articles.
+
+This script allows a user to classify articles from URLs provided via command-line
+arguments, a text file, or interactive input. The results, including the article's
+title, content, and predicted bias, are appended to specified sheets in an
+Excel workbook.
+
+It serves as a tool for manual testing and bulk processing without needing to run
+the FastAPI frontend.
+"""
 
 import argparse
 import os
@@ -13,6 +22,7 @@ from classify_articles import classify_bias
 
 
 def parse_args() -> argparse.Namespace:
+    """Defines and parses command-line arguments for the script."""
     parser = argparse.ArgumentParser(description="Classify article bias without running the API.")
     parser.add_argument(
         "--url",
@@ -42,6 +52,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_urls_from_file(path: str) -> List[str]:
+    """Loads a list of URLs from a text file, one URL per line."""
     urls: List[str] = []
     if not os.path.exists(path):
         raise FileNotFoundError(f"URL file not found: {path}")
@@ -54,6 +65,10 @@ def load_urls_from_file(path: str) -> List[str]:
 
 
 def resolve_urls(args: argparse.Namespace) -> List[str]:
+    """
+    Consolidates URLs from command-line arguments and/or a file.
+    Falls back to interactive input if no URLs are provided.
+    """
     urls: List[str] = []
     if args.url:
         urls.extend(u.strip() for u in args.url if u.strip())
@@ -73,6 +88,12 @@ def resolve_urls(args: argparse.Namespace) -> List[str]:
 
 
 def write_to_excel(full_df: pd.DataFrame, summary_df: pd.DataFrame, excel_path: str, full_sheet: str, summary_sheet: str) -> None:
+    """
+    Appends DataFrames to specified sheets in an Excel file.
+
+    If the file or sheets do not exist, they are created. If they do exist,
+    data is appended to the next available row.
+    """
     if full_df.empty:
         print("No rows to persist; skipping Excel update.")
         return
@@ -98,6 +119,14 @@ def write_to_excel(full_df: pd.DataFrame, summary_df: pd.DataFrame, excel_path: 
 
 
 def main() -> int:
+    """
+    Main function to orchestrate the article classification process.
+    
+    - Parses arguments.
+    - Resolves URLs to process.
+    - Fetches, classifies, and collects data for each URL.
+    - Writes the collected data to an Excel file.
+    """
     args = parse_args()
     urls = resolve_urls(args)
     if not urls:

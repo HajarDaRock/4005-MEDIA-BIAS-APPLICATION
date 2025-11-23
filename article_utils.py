@@ -44,11 +44,9 @@ def fetch_article(url):
     }
 
     try:
-        # Send GET request with custom headers and a timeout
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()  # Raise an error for HTTP error codes
 
-        # Parse the HTML content using BeautifulSoup
         soup = BeautifulSoup(response.content, 'html.parser')
 
         # Extract the title from the first <h1> tag
@@ -62,12 +60,10 @@ def fetch_article(url):
         return title, content
 
     except Timeout:
-        # Handle case where the request exceeds the timeout limit
         print(f"Request to {url} timed out after 10 seconds.")
         return None, None
 
     except HTTPError as http_err:
-        # Handle specific HTTP errors (e.g., 403 Forbidden)
         if response.status_code == 403:
             print(f"Access to {url} is forbidden. Unable to access the article.")
         else:
@@ -75,6 +71,5 @@ def fetch_article(url):
         return None, None
 
     except Exception as e:
-        # Handle any other exceptions
         print(f"An error occurred while fetching the article: {e}")
         return None, None

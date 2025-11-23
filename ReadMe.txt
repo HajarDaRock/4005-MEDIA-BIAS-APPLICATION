@@ -1,8 +1,6 @@
 Media Bias Classifier (TextCNN)
 ================================
-Modern news consumption is mediated by algorithms that tend to amplify existing political preferences, obscuring ideological framing, and narrowing exposure to diverse viewpoints. 
-This project proposes an AI-driven system that combines deep learning and natural language processing to classify Canadian news articles as Left, Right, or Neutral. 
-By accepting article URLs or pre-labeled outlets, the model produces systematic, transparent assessments of political bias, thereby enabling scholars, journalists, and readers to interrogate media narratives with greater rigor and to mitigate the polarization that echo chambers sustain.
+Modern news consumption is mediated by algorithms that tend to amplify existing political preferences, obscuring ideological framing, and narrowing exposure to diverse viewpoints. This project proposes an AI-driven system that combines deep learning and natural language processing to classify Canadian news articles as Left, Right, or Neutral. By accepting article URLs or pre-labeled outlets, the model produces systematic, transparent assessments of political bias, thereby enabling scholars, journalists, and readers to interrogate media narratives with greater rigor and to mitigate the polarization that echo chambers sustain.
 
 Classifies news articles as Left, Right, or Neutral bias. It fetches Kaggle datasets, cleans them, trains a TextCNN with PyTorch, and serves a FastAPI UI so you can paste a URL and see the predicted leaning.
 
@@ -74,26 +72,26 @@ Model Description (model type and architecture)
 --------------------------
 The final model is a TextCNN classifier that takes tokenized news articles as input and predicts one of three bias labels: Left, Right, or Neutral. It is a shallow CNN designed to capture phraselevel patterns in text rather than relying on very deep stacking of layers.
 
-- **Input text is converted to integer token IDs** and passed through a learned embedding layer that maps each token to a 200 dimensional vector.
+- Input text is converted to integer token IDs and passed through a learned embedding layer that maps each token to a 200 dimensional vector.
 
-- **The embedded sequence runs through four parallel 1D convolutions** (kernel sizes 3, 4, 5, 7; 100 filters each) so the TextCNN detects short bias cues via 3-7 word n‑grams. Larger kernels aren’t used because bias signals rarely span longer phrases, so extra parameters may confuse the model.
+- The embedded sequence runs through four parallel 1D convolutions (kernel sizes 3, 4, 5, 7; 100 filters each) so the TextCNN detects short bias cues via 3-7 word n‑grams. Larger kernels aren’t used because bias signals rarely span longer phrases, so extra parameters may confuse the model.
 
-- **Each conv feature map passes through ReLU, then max-over-time pooling** to keep its strongest n‑gram signal; the pooled outputs from all four kernel sizes (100 filters each) concatenate into a 400‑dimensional feature vector (4 n-gram x 100 filter).
+- Each conv feature map passes through ReLU, then max-over-time pooling to keep its strongest n‑gram signal; the pooled outputs from all four kernel sizes (100 filters each) concatenate into a 400‑dimensional feature vector (4 n-gram x 100 filter).
 
-- **A dropout layer with a rate of 0.6 is applied** to this concatenated vector for regularisation, and a final fully connected layer projects the 400 features down to three labels (Left, Right, and Neutral).
+- A dropout layer with a rate of 0.6 is applied to this concatenated vector for regularisation, and a final fully connected layer projects the 400 features down to three labels (Left, Right, and Neutral).
 
-- **The classifier’s logits are passed through a softmax** (trained with weighted cross-entropy) to yield normalized probabilities for the Left, Right, and Neutral classes. That keeps the description compact while covering the final probability output and the loss used to train it.
+- The classifier’s logits are passed through a softmax (trained with weighted cross-entropy) to yield normalized probabilities for the Left, Right, and Neutral classes. That keeps the description compact while covering the final probability output and the loss used to train it.
 
 
 Evaluation Results and a Performance Results:
 --------------------------
 The model was evaluated on a held-out test set using standard classification metrics: precision, recall, F1-score, and accuracy. Weighted averages were used to ensure that class imbalance did not skew the results.
 
-**Overall Performance:**
+Overall Performance:
 - Accuracy: 85.4%
 - Macro F1-Score: 85.4%
 
-**F1-Score by Class:**
+F1-Score by Class:
 - Neutral: 93.5%
 - Left: 82.2%
 - Right: 80.3%
@@ -114,18 +112,18 @@ Future work could explore more advanced, context-aware architectures like Transf
 
 Contribution Breakdown specifying the role and work completed by each group member
 --------------------------
-**Hajar:**
+Hajar:
 - Implemented the conversion and merging logic that turns heterogeneous Kaggle datasets into a single, consistent text,label training file.
 - Designed and coded the data balancing step so that Left, Right, and Neutral each have the same frequency.
 - Added and iteratively refined training controls such as learning rate scheduling, early stopping, class weighting, and outlet based text augmentation, using the metrics to drive successive improvements.
 - Implemented the logic to skip or stop training when later epochs showed little to no improvement.
 
-**Hans:** 
+Hans: 
 - Exported per-class precision/recall/F1, macro/weighted averages, confusion matrices, and per-epoch history into structured JSON.
 - Built the metrics plots: combined bar chart, precision/recall/F1 trend lines, and confusion matrix heatmap per run.
 - Configured and refined the quickstart scripts and documentation, making it possible to go from a clean environment to a trained model and running API with a single command.
 
-**Shared:**
+Shared:
 - Researched and selected the TextCNN architecture and key hyperparameters (embedding size, filter sizes, number of filters, dropout levels) based on both literature and empirical results.
 - Worked together on parameter tuning and ablation experiments, interpreting per class F1 scores and confusion matrices to decide which changes (e.g., adding 7 gram filters, adjusting dropout, using class weights) were genuinely beneficial.
 - Reviewed results from multiple runs and used them to refine data preprocessing choices (such as outlet augmentation and minimum text length) and training settings.

@@ -25,6 +25,7 @@ except Exception as e:
 
 
 def _resolve_device() -> Optional["torch.device"]:
+    """Determines the most appropriate PyTorch device, prioritizing CUDA, then DirectML, then CPU."""
     if torch is None:
         return None
     if torch.cuda.is_available():
@@ -44,6 +45,16 @@ _VOCAB: Dict[str, int] = None
 
 
 def _simple_tokenize(text: str, lowercase: bool = True) -> List[str]:
+    """
+    Splits text into a list of words, converting to lowercase and keeping only alphanumeric sequences.
+    
+    Args:
+        text: The input string to tokenize.
+        lowercase: Whether to convert the text to lowercase first.
+
+    Returns:
+        A list of string tokens.
+    """
     if not text:
         return []
     if lowercase:
@@ -53,6 +64,11 @@ def _simple_tokenize(text: str, lowercase: bool = True) -> List[str]:
 
 
 def _load_artifacts():
+    """
+    Loads the trained model, configuration, and vocabulary from disk into global variables.
+    This function acts as a singleton loader; it will only load the artifacts once.
+    It expects 'vocab.json' and 'textcnn_state.pt' to be in the 'models/' directory.
+    """
     global _MODEL, _CONFIG, _VOCAB
     if _MODEL is not None and _CONFIG is not None and _VOCAB is not None:
         return
@@ -97,16 +113,52 @@ def _load_artifacts():
 
 
 def _numericalize(tokens: List[str], vocab: Dict[str, int], unk_id: int) -> List[int]:
+    """
+    Converts a list of string tokens into a list of integer IDs based on a vocabulary.
+
+    Args:
+        tokens: The list of string tokens.
+        vocab: The word-to-ID mapping.
+        unk_id: The ID to use for out-of-vocabulary tokens.
+
+    Returns:
+        A list of integer IDs.
+    """
     return [vocab.get(tok, unk_id) for tok in tokens]
 
 
 def _pad_or_truncate(ids: List[int], max_len: int, pad_id: int) -> List[int]:
+    """
+    Pads or truncates a list of IDs to a fixed maximum length.
+
+    Args:
+        ids: The list of integer IDs.
+        max_len: The target length.
+        pad_id: The ID to use for padding.
+
+    Returns:
+        The list of IDs at the specified maximum length.
+    """
     if len(ids) >= max_len:
         return ids[:max_len]
     return ids + [pad_id] * (max_len - len(ids))
 
 
 def classify_bias(article_text: str) -> str:
+    """
+    Classifies the political bias of a given text as 'Left', 'Right', or 'Neutral'.
+
+    This function loads the trained TextCNN model (if not already loaded) and uses it
+    to predict the bias of the input string. It handles tokenization, numericalization,
+    and padding internally.
+
+    Args:
+        article_text: The text of the news article to classify.
+
+    Returns:
+        A string representing the predicted bias label. Returns an error message if the
+        model is not available or an error occurs.
+    """
     try:
         if _MODEL is None:
             _load_artifacts()
@@ -120,7 +172,6 @@ def classify_bias(article_text: str) -> str:
         unk_id = int(_CONFIG.get("unk_id", 1))
         id2label = _CONFIG.get("id2label", ["Left", "Right", "Neutral"])
 
-        # Shorten input akin to previous behavior but keep consistent with model's max_len
         tokens = _simple_tokenize(article_text or "", lowercase=lowercase)
         ids = _numericalize(tokens, _VOCAB, unk_id)
         ids = _pad_or_truncate(ids, max_len=max_len, pad_id=pad_id)
@@ -131,7 +182,8 @@ def classify_bias(article_text: str) -> str:
         with torch.no_grad():
             logits = _MODEL(x)
             pred = int(torch.argmax(logits, dim=1).item())
-        # Safety
+        
+        # Safety check to ensure prediction is within bounds
         if 0 <= pred < len(id2label):
             return id2label[pred]
         return "Neutral"

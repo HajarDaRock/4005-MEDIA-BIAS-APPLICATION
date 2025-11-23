@@ -47,6 +47,7 @@ except Exception:
 
 
 def set_seed(seed: int = 42):
+    """Set random seeds for reproducibility across random, torch, and CUDA."""
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -82,6 +83,9 @@ def resolve_device(requested: Optional[str] = None):
     return torch.device("cpu")
 
 def simple_tokenize(text: str, lowercase: bool = True) -> List[str]:
+    """
+    Splits text into a list of words, converting to lowercase and keeping only alphanumeric sequences.
+    """
     if not isinstance(text, str):
         text = ""
     if lowercase:
@@ -90,6 +94,7 @@ def simple_tokenize(text: str, lowercase: bool = True) -> List[str]:
 
 
 class TextDataset(Dataset):
+    """PyTorch Dataset for text classification."""
     def __init__(self, texts: List[str], labels: List[int], vocab: Dict[str, int], max_len: int, lowercase: bool, unk_id: int, pad_id: int):
         self.texts = texts
         self.labels = labels
@@ -120,6 +125,19 @@ class TextDataset(Dataset):
 
 
 def build_vocab(texts: List[str], lowercase: bool, min_freq: int, pad_token: str = "<pad>", unk_token: str = "<unk>") -> Tuple[Dict[str, int], int, int, Counter]:
+    """
+    Builds a vocabulary from a list of texts.
+
+    Args:
+        texts: A list of documents.
+        lowercase: Whether to lowercase the text.
+        min_freq: The minimum frequency for a token to be included.
+        pad_token: The special token for padding.
+        unk_token: The special token for unknown words.
+
+    Returns:
+        A tuple containing the word-to-ID mapping, pad ID, unknown ID, and the token frequency counter.
+    """
     counter = Counter()
     for t in texts:
         tokens = simple_tokenize(t, lowercase=lowercase)
@@ -135,6 +153,16 @@ def build_vocab(texts: List[str], lowercase: bool, min_freq: int, pad_token: str
 
 
 def map_labels(raw_labels: List, id2label: List[str]) -> Tuple[List[int], Dict[str, int]]:
+    """
+    Maps a list of raw labels (string or int) to a consistent integer representation.
+
+    Args:
+        raw_labels: A list of labels to map.
+        id2label: An ordered list of canonical label names (e.g., ["Left", "Right", "Neutral"]).
+
+    Returns:
+        A tuple containing the list of mapped integer labels and the label-to-ID mapping.
+    """
     # If labels are strings like Left/Right/Neutral, map using id2label order
     label2id = {lab: i for i, lab in enumerate(id2label)}
     mapped = []
@@ -159,6 +187,19 @@ def map_labels(raw_labels: List, id2label: List[str]) -> Tuple[List[int], Dict[s
 
 
 def split_train_val(texts: List[str], labels: List[int], val_frac: float, seed: int = 42, stratify: bool = True):
+    """
+    Splits texts and labels into training and validation sets.
+
+    Args:
+        texts: A list of all texts.
+        labels: A list of all labels.
+        val_frac: The fraction of the data to use for validation.
+        seed: The random seed for shuffling.
+        stratify: Whether to preserve label proportions in the splits.
+
+    Returns:
+        A tuple of (train_texts, train_labels, val_texts, val_labels).
+    """
     n = len(texts)
     if not stratify:
         idx = list(range(n))
@@ -253,6 +294,12 @@ def parse_class_weights(spec: str, id2label: List[str]) -> Optional[List[float]]
 
 
 def train_one_epoch(model, loader, criterion, optimizer, device):
+    """
+    Runs a single training epoch.
+
+    Returns:
+        A tuple of (average_loss, accuracy).
+    """
     model.train()
     total_loss = 0.0
     total = 0
@@ -272,6 +319,12 @@ def train_one_epoch(model, loader, criterion, optimizer, device):
 
 
 def eval_epoch(model, loader, criterion, device):
+    """
+    Runs a single evaluation epoch.
+
+    Returns:
+        A tuple of (average_loss, accuracy).
+    """
     model.eval()
     total_loss = 0.0
     total = 0

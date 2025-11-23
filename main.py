@@ -12,10 +12,8 @@ from openpyxl import load_workbook
 import os
 import asyncio
 
-# Initialize FastAPI app
 app = FastAPI()
 
-# Mount static files and templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -23,12 +21,10 @@ templates = Jinja2Templates(directory="templates")
 EXCEL_PATH = "ExtractedData.xlsx"
 EXCEL_SHEET = "BiasResults"
 
-# Serve the index page
 @app.get("/", response_class=HTMLResponse)
 async def serve_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Serve the About Us page
 @app.get("/a", response_class=HTMLResponse)
 async def serve_about(request: Request):
     return templates.TemplateResponse("AboutUs.html", {"request": request})
@@ -41,16 +37,13 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Endpoint to classify the bias of a news article
 @app.post("/classify")
 async def classify_url(request: Request):
     try:
-        # Receive JSON data from frontend
         data = await request.json()
         url = data.get("url")
         print(f"[INPUT] URL received: {url}")
 
-        # Validate URL
         if not url:
             return JSONResponse(content={"error": "No URL provided."}, status_code=400)
         if not url.startswith("http"):
@@ -59,7 +52,6 @@ async def classify_url(request: Request):
                 status_code=400
             )
 
-        # Check if the URL is restricted
         if is_restricted_url(url):
             print(f"[BLOCKED] Restricted domain: {url}")
             return JSONResponse(
@@ -67,7 +59,6 @@ async def classify_url(request: Request):
                 status_code=403
             )
 
-        # Scrape the article's title and content
         title, content = fetch_article(url)
         print(f"[SCRAPE] Title: {title}")
         print(f"[SCRAPE] Content length: {len(content) if content else 'None'}")
@@ -78,7 +69,6 @@ async def classify_url(request: Request):
                 status_code=400
             )
 
-        # Classify the bias using a machine learning model
         loop = asyncio.get_event_loop()
         bias = await loop.run_in_executor(None, classify_bias, content)
         print(f"[MODEL] Raw bias result: {repr(bias)}")
@@ -88,7 +78,6 @@ async def classify_url(request: Request):
             bias = "Neutral"
             print("[MODEL] Bias was empty or null; defaulting to 'Neutral'.")
 
-        # Prepare data for saving to Excel
         new_data = pd.DataFrame([{
             "URL": url,
             "Title": title,
@@ -96,7 +85,8 @@ async def classify_url(request: Request):
             "Bias": bias
         }])
 
-        # Save data to Excel
+        # Appends data to an existing Excel file or creates a new one.
+        # This is for basic data logging of predictions.
         try:
             if os.path.exists(EXCEL_PATH):
                 book = load_workbook(EXCEL_PATH)
@@ -118,7 +108,6 @@ async def classify_url(request: Request):
                 status_code=500
             )
 
-        # Return the bias classification as a JSON response
         return {"bias": bias, "title": title}
 
     # Catch-all for unexpected errors
