@@ -57,6 +57,7 @@ After merging the datasets, the corpus was dominated by Neutral articles. To avo
 
 The training split is used to build the vocabulary and fit model parameters, the validation split is used exclusively for hyperparameter tuning, early stopping, and metric reporting, and the test split is kept for final evaluation.
 
+Note: Although the dataset is class-balanced after preprocessing, it may still reflect biases in how different news outlets or labeling sources define “Left,” “Right,” and “Neutral.” These underlying inconsistencies can influence how well the model generalises to new or international news domains.
 
 Training Procedure
 --------------------------
@@ -66,6 +67,17 @@ The model was only trained after the dataset had been fully prepared and fixed a
 - Optimisation used the Adam optimiser with a learning rate of 0.0007 and modest class weights that slightly up weighted Left and Right relative to Neutral to emphasise performance on the political labels without changing the architecture or data (Left:1.10,Right:1.20,Neutral:1.0).
 - A ReduceLROnPlateau scheduler monitored validation loss and cut the learning rate when improvements stalled, and early stopping terminated training if validation loss failed to improve for two consecutive epochs, typically selecting a best checkpoint between epochs 8 and 10.
 - After each epoch, training and validation loss and accuracy were recorded; whenever a new minimum validation loss was observed, the model weights were checkpointed, and the final selected checkpoint was evaluated on the validation split to produce detailed metrics (per class precision, recall, F1, confusion matrix, and epoch history) while leaving the test split untouched for potential future evaluation.
+
+Evaluation Metrics
+------------------
+We report accuracy, precision, recall, and F1-score:
+
+- **Accuracy**: Proportion of correctly classified articles.  
+- **Precision**: Among articles predicted as a given class, how many truly belong to that class.  
+- **Recall**: Among all articles that truly belong to a class, how many the model correctly recovers.  
+- **F1-score**: Harmonic mean of precision and recall, balancing false positives and false negatives.
+
+Because even a balanced corpus can behave unevenly during training, we report both macro and weighted F1-scores to ensure that no class dominates the overall performance.
 
 
 Model Description (model type and architecture)
