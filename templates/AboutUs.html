@@ -2,159 +2,110 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Canadian Media Bias Checker</title>
+        <title>About Us | The Political Spectrum</title>
         <link rel="stylesheet" href="/static/style.css">
-        <link rel="icon" type="image/png" href="/static/favicon.png">
-    
-        <style>
-        /* Tab container styling */
-        .tab-container {
-            margin-top: 2em;
-            padding: 1em;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
-
-        /* Tab button styling */
-        .tab-buttons {
-            display: flex;
-            gap: 1em;
-            margin-bottom: 1em;
-        }
-
-        .tab-btn {
-            padding: 0.5em 1em;
-            border: 1px solid #2c3e50;
-            background-color: white;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 5px;
-            transition: background-color 0.2s ease;
-        }
-
-        .tab-btn.active,
-        .tab-btn:hover {
-            background-color: #2c3e50;
-            color: white;
-        }
-
-        /* Tab content styling */
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease-in;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* Fade-in animation */
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        </style>
+        <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     </head>
 
 <body class="body">
-    <!-- Page Header -->
-    <h1 class="header">Canadian Media Bias Checker</h1>
+    <header class="header">
+        <a href="/">
+            <img src="/static/logo.svg" alt="The Political Spectrum Logo" class="logo">
+        </a>
+        <h1 class="page-title">The Political Spectrum</h1>
+        <p class="tagline">A student-built project for media literacy.</p>
+    </header>
 
-    <!-- Navigation Bar -->
     <nav id="main-nav"> 
         <ul>
-            <li><a href="/" >Home</a></li>
+            <li><a href="/">Home</a></li>
             <li><a href="/a" class="active">About Us</a></li>
         </ul>
     </nav>
 
-    <!-- Main Content -->
-    <div class="content">
-        <!-- Introduction Section -->
-        <p class="paragraph">
-            The <strong>Canadian Media Bias Checker</strong> is a student-built project designed to help users understand potential political bias in online news articles, especially within the Canadian context.
-        </p>
-
-        <p class="paragraph">
-            By inputting a news article URL or selecting from a list of known media outlets, users can quickly receive an AI-based assessment of the article's political leaning: <em>Left</em>, <em>Right</em>, or <em>Neutral</em>.
-        </p>
-
-        <p class="paragraph">
-            This tool was developed to promote transparency and media literacy, particularly for Canadians seeking to navigate a growing number of online news sources with varying editorial perspectives.
-        </p>
-
-        <!-- Tab Section -->
-        <div class="tab-container">
-            <!-- Tab Buttons -->
-            <div class="tab-buttons">
-                <button class="tab-btn active" onclick="openTab(event, 'left')">Left</button>
-                <button class="tab-btn" onclick="openTab(event, 'right')">Right</button>
-                <button class="tab-btn" onclick="openTab(event, 'neutral')">Neutral</button>
+    <main class="content">
+        <section class="panel">
+            <div class="section-header">
+                <h2 class="subheading centered">Why we built this</h2>
+                <p class="lede">We want readers to see how tone, framing, and word choice can tilt coverage Left, Right, or stay Neutral.</p>
             </div>
-        
-            <!-- Tab Content -->
-            <div class="tab-content active" id="left">
-                <ul>
-                    <li>Supports progressive values (e.g. social welfare, inclusion, climate action).</li>
-                    <li>Favours government involvement in healthcare, education, housing, etc.</li>
-                    <li>Often aligns with Liberal, NDP, or Green Party policies.</li>
-                </ul>
+
+            <p class="paragraph">
+                The Political Spectrum is a student-built project designed to help people spot potential political bias in online news articles. By inputting a URL, the app returns an AI assessment of leaning based on the article text.
+            </p>
+            <p class="paragraph">
+                Our analysis runs locally on your machine, so you can experiment without sending article data to third-party services. The AI model is balanced across Left, Right, and Neutral labels.
+            </p>
+        </section>
+
+        <section class="panel">
+            <div class="section-header">
+                <h2 class="subheading centered">What Left / Right / Neutral means here</h2>
+                <p class="lede">Click a tab to see how we describe each leaning in this project.</p>
             </div>
-        
-            <div class="tab-content" id="right">
-                <ul>
-                    <li>Emphasizes fiscal conservatism and traditional social values.</li>
-                    <li>Favours lower taxes and limited government intervention.</li>
-                    <li>Often aligns with the Conservative Party or right-leaning provincial parties.</li>
-                </ul>
+
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="openTab(event, 'left')">Left</button>
+                    <button class="tab-btn" onclick="openTab(event, 'right')">Right</button>
+                    <button class="tab-btn" onclick="openTab(event, 'neutral')">Neutral</button>
+                </div>
+
+                <div class="tab-content active" id="left">
+                    <ul>
+                        <li>Supports progressive values like social programs, inclusion, and climate action.</li>
+                        <li>Favours government involvement in healthcare, education, and housing.</li>
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="right">
+                    <ul>
+                        <li>Emphasizes fiscal conservatism and traditional social values.</li>
+                        <li>Favours lower taxes and limited government intervention.</li>
+                    </ul>
+                </div>
+
+                <div class="tab-content" id="neutral">
+                    <ul>
+                        <li>Focuses on balanced reporting without ideological language.</li>
+                        <li>Presents multiple viewpoints fairly and proportionally.</li>
+                    </ul>
+                </div>
             </div>
-        
-            <div class="tab-content" id="neutral">
-                <ul>
-                    <li>Focuses on objective and balanced reporting.</li>
-                    <li>Presents multiple viewpoints fairly, avoids strong ideological language.</li>
-                    <li>Does not favor or critique any political party.</li>
-                </ul>
+        </section>
+
+        <section class="panel">
+            <div class="section-header">
+                <h2 class="subheading centered">Get in Touch</h2>
+                <p class="lede">Share feedback so we can improve the tool.</p>
             </div>
-        </div>
+            
+            <p class="paragraph">
+                This project is academic in nature and not affiliated with any political organization or media company.
+            </p>
 
-        <!-- Features Section -->
-        <h2 class="subheading">Key Features</h2>
-        <ul class="feature-list">
-            <li>Bias classification based on article content using a local TextCNN learning model</li>
-            <li>Manual bias rating for selected Canadian media outlets</li>
-            <li>Error handling for restricted domains and invalid URLs</li>
-        </ul>
+            <p class="contact">
+                Questions? Email <a href="mailto:HajarKassis@cmail.carleton.ca">HajarKassis@cmail.carleton.ca</a>
+                or <a href="mailto:HansBeeponee@cmail.carleton.ca">HansBeeponee@cmail.carleton.ca</a>.
+            </p>
+        </section>
+    </main>
 
-        <!-- Disclaimer -->
-        <p class="paragraph">
-            This project is academic in nature and not affiliated with any political organization or media company.
-        </p>
+    <footer class="footer">
+        <p>&copy; 2025 The Political Spectrum. All rights reserved.</p>
+        <nav class="footer-nav">
+            <a href="/">Home</a> | <a href="/a">About Us</a>
+        </nav>
+    </footer>
 
-        <!-- Contact Information -->
-        <p class="contact">
-            For questions, please email <a href="mailto:HajarKassis@cmail.carleton.ca">HajarKassis@cmail.carleton.ca</a>
-            or <a href="mailto:HansBeeponee@cmail.carleton.ca">HansBeeponee@cmail.carleton.ca</a>.
-        </p>
-
-        <!-- Backlink -->
-        <p class="backlink">
-            <a href="/">Back to Home</a>
-        </p>
-    </div>
-
-    <!-- JavaScript for Tab Functionality -->
     <script>
         function openTab(event, tabId) {
             const tabs = document.querySelectorAll('.tab-content');
             const buttons = document.querySelectorAll('.tab-btn');
-        
-            // Deactivate all tabs and buttons
+
             tabs.forEach(tab => tab.classList.remove('active'));
             buttons.forEach(btn => btn.classList.remove('active'));
-        
-            // Activate the selected tab and button
+
             document.getElementById(tabId).classList.add('active');
             event.currentTarget.classList.add('active');
         }

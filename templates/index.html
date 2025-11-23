@@ -2,15 +2,19 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Canadian Media Bias Checker</title>
-        <!-- Link to external stylesheet -->
+        <title>The Political Spectrum</title>
         <link rel="stylesheet" href="/static/style.css">
-        <!-- Favicon for the webpage -->
-        <link rel="icon" type="image/png" href="/static/favicon.png">
+        <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
     </head>
 
 <body class="body">
-    <h1 class="header">Canadian Media Bias Checker</h1>
+    <header class="header">
+        <a href="/">
+            <img src="/static/logo.svg" alt="The Political Spectrum Logo" class="logo">
+        </a>
+        <h1 class="page-title">The Political Spectrum</h1>
+        <p class="tagline">Uncover the political leaning of any news article.</p>
+    </header>
 
     <nav id="main-nav"> 
         <ul>
@@ -19,120 +23,145 @@
         </ul>
     </nav>
 
-    <div class="content">
-        <!-- Search Bias Rating Section -->
-        <h2 class="subheading" style="text-align: center;">Check Bias from URL</h2>
+    <main class="content">
+        <section class="hero">
+            <div>
+                <p class="kicker">AI-Powered Analysis</p>
+                <h2 class="subheading">Analyze Bias in Seconds</h2>
+                <p class="lede">Our tool examines article content to reveal underlying political bias.</p>
+            </div>
+            <div class="pill">AI Model</div>
+        </section>
 
-        <div class="search-section">
-            <!-- Input field for article URL -->
+        <section class="panel">
             <div class="input-field">
-                <label><strong>URL of a news article:</strong></label>
+                <label class="field-label">News Article URL</label>
                 <div class="inline-group">
-                    <input type="text" id="urlInput" placeholder="Paste article URL here..." />
-                    <!-- Button to check article bias -->
-                    <button class="small-btn" onclick="checkBias()">Check Article Bias</button>
+                    <input type="text" id="urlInput" placeholder="https://www.example.com/news/story" aria-label="News article URL" />
+                    <button class="primary-btn small-btn" onclick="checkBias()">Check Bias</button>
                 </div>
             </div>
-        </div>
-        
-        <div class="reset-container">
-            <button onclick="resetForm()" class="reset-button">Reset</button>
-        </div>
 
-        <div id="response-container">
-            <h3 id="result-label" style="display: none;">
-                Bias Rating: <span id="result" class="rating"></span>
-            </h3>
-            <div id="error" class="error" style="display: none;"></div>
-        </div>
+            <div id="loader" class="loader is-hidden"></div>
 
-        <h2 class="subheading" style="text-align: center;">What is Media Bias?</h2>
+            <div id="response-container" class="is-hidden">
+                <div id="error" class="error is-hidden"></div>
+                <div id="result-display" class="is-hidden">
+                    <h3 class="result-title">Analysis Complete</h3>
+                    <p class="article-title"><strong>Article:</strong> <span id="articleTitle"></span></p>
+                    <div class="bias-rating">
+                        <p class="rating-label">Bias Rating:</p>
+                        <p id="result" class="rating"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="actions">
+                <button onclick="resetForm()" class="ghost-btn reset-button">Reset</button>
+            </div>
+        </section>
 
-        <div class="bias-section">
-            <h3 class="bias-title">Example of a Biased Headline:</h3>
-            <div class="bias-pair">
-                <img src="/static/Headline.png" alt="Article title election polls: how trustworthy are they in one of Canadas most important elections?">
-                <p>
-                    This headline is a good example of how media can shape what we think before we’ve even read the article. 
-                    It’s bold, dramatic, and meant to grab attention - which is normal - but it also hints at a deeper opinion or mood. 
-                    Depending on how it's written, a headline like this might subtly lean left or right, even without saying it outright. 
-                    That’s where bias can sneak in: not just in what’s reported, but how it’s introduced.
-                </p>
+        <section class="panel">
+            <div class="section-header">
+                <h2 class="subheading centered">What is Media Bias?</h2>
+                <p class="lede">Bias often lives in framing: word choice, emphasis, and the details we highlight.</p>
             </div>
 
-            <h3 class="bias-title right">Example of a Biased Article:</h3>
-            <div class="bias-pair right">
-                <img src="/static/Article.png" alt="Article title Carneys plan to cut tens of billions in spending is tough but doable, experts say">
-                <p>
-                    This article talks about Mark Carney’s moves around federal spending and cancelling the carbon tax. 
-                    On the surface, it seems neutral, but the way it’s written—highlighting things like the "$4-billion hole" or saying the tax was cancelled “through administrative fiat,” adds a certain tone. 
-                    It's not always about what’s said, but how it’s said. Articles like this can sway readers one way or the other depending on what details are emphasized. 
-                    It’s a great example of how even factual reporting can feel biased if framed a certain way.
-                </p>
-            </div>
-        </div>
+            <div class="bias-section">
+                <div class="bias-card">
+                    <h3 class="bias-title">Biased Headline</h3>
+                    <div class="bias-pair">
+                        <img src="/static/Headline.png" alt="Example headline about election polls and their trustworthiness">
+                        <p>
+                            Headlines can prime readers before the first paragraph. Dramatic wording or one-sided framing
+                            nudges perception toward a political leaning even when facts stay the same.
+                        </p>
+                    </div>
+                </div>
 
-    <!-- JavaScript Section -->
+                <div class="bias-card">
+                    <h3 class="bias-title">Biased Article</h3>
+                    <div class="bias-pair right">
+                        <img src="/static/Article.png" alt="Example article about budget cuts and carbon tax decisions">
+                        <p>
+                            Article tone comes from what is emphasized: highlighting gaps, choosing charged verbs, or
+                            foregrounding certain quotes. Those choices can subtly tilt Left or Right while remaining factual.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 The Political Spectrum. All rights reserved.</p>
+        <nav class="footer-nav">
+            <a href="/">Home</a> | <a href="/a">About Us</a>
+        </nav>
+    </footer>
+
     <script>
-        // Function to check bias of an article based on URL
         async function checkBias() {
             const urlInput = document.getElementById('urlInput');
             const url = urlInput.value.trim();
-            const resultDiv = document.getElementById('result');
-            const resultLabel = document.getElementById('result-label');
+            const loader = document.getElementById('loader');
+            const responseContainer = document.getElementById('response-container');
             const errorDiv = document.getElementById('error');
-    
-            // Reset result and error display
-            resultLabel.style.display = "none";
-            errorDiv.style.display = "none";
-            resultDiv.textContent = "";
-    
-            // Validate URL input
+            const resultDisplay = document.getElementById('result-display');
+            const articleTitle = document.getElementById('articleTitle');
+            const result = document.getElementById('result');
+
+            // Reset previous results and errors
+            errorDiv.classList.add('is-hidden');
+            resultDisplay.classList.add('is-hidden');
+            responseContainer.classList.add('is-hidden');
+            loader.classList.remove('is-hidden');
+
             if (!url || !url.startsWith("http")) {
                 errorDiv.textContent = "Please enter a valid URL (must start with http or https).";
-                errorDiv.style.display = "block";
+                errorDiv.classList.remove('is-hidden');
+                responseContainer.classList.remove('is-hidden');
+                loader.classList.add('is-hidden');
                 return;
             }
-    
+
             try {
-                // Send POST request to backend
                 const response = await fetch("/classify", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ url })
                 });
-    
+
                 const data = await response.json();
-    
-                // Display result or error
+
+                loader.classList.add('is-hidden');
+                responseContainer.classList.remove('is-hidden');
+
                 if (data.error) {
                     errorDiv.textContent = data.error;
-                    errorDiv.style.display = "block";
+                    errorDiv.classList.remove('is-hidden');
                 } else {
-                    resultDiv.textContent = data.bias;
-                    resultLabel.style.display = "block";
+                    articleTitle.textContent = data.title;
+                    result.textContent = data.bias;
+                    result.className = `rating ${data.bias.toLowerCase()}`;
+                    resultDisplay.classList.remove('is-hidden');
                 }
-    
+
             } catch (error) {
+                loader.classList.add('is-hidden');
+                responseContainer.classList.remove('is-hidden');
                 errorDiv.textContent = "Could not connect to the backend server.";
-                errorDiv.style.display = "block";
+                errorDiv.classList.remove('is-hidden');
             }
         }
-    
-        // Function to reset the form and clear results
+
         function resetForm() {
             document.getElementById('urlInput').value = "";
-
-            document.getElementById('result').textContent = "";
-            document.getElementById('result-label').style.display = "none";
-
-            const errorDiv = document.getElementById('error');
-            errorDiv.textContent = "";
-            errorDiv.style.display = "none";
+            document.getElementById('response-container').classList.add('is-hidden');
+            document.getElementById('error').classList.add('is-hidden');
+            document.getElementById('result-display').classList.add('is-hidden');
+            document.getElementById('loader').classList.add('is-hidden');
         }
-    </script>            
+    </script>
 
 </body>
 </html>

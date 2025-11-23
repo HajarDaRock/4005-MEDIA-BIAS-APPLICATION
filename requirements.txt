@@ -1,4 +1,4 @@
-torch 
+# Install a torch build separately (CUDA, DirectML, or CPU). The quickstart script will auto-detect and install an appropriate build.
 pandas
 fastapi
 uvicorn
@@ -11,4 +11,3 @@ scikit-learn
 matplotlib
 kaggle
 kagglehub
-torch-directml; platform_system == "Windows"

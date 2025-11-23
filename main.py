@@ -119,7 +119,7 @@ async def classify_url(request: Request):
             )
 
         # Return the bias classification as a JSON response
-        return {"bias": bias}
+        return {"bias": bias, "title": title}
 
     # Catch-all for unexpected errors
     except Exception as e:

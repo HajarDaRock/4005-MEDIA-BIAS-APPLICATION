@@ -1,6 +1,6 @@
 <#
 Quickstart (Kaggle preferred):
- - Assumes PyTorch is installed (CUDA build recommended for NVIDIA GPUs; see https://pytorch.org/get-started/locally/)
+ - Installs a torch build automatically (CUDA for NVIDIA GPUs, DirectML for AMD/ATI, CPU fallback)
  - Tries to download and prepare Kaggle datasets into data/train.csv
  - Falls back to sample data if Kaggle not configured or no CSVs found
  - Trains and starts the API
@@ -16,6 +16,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repo = Resolve-Path (Join-Path $here '..')
 Set-Location $repo
 
+# List of targeted Kaggle datasets
 $datasetSources = @(
   'surajkarakulath/labelled-corpus-political-bias-hugging-face',
   'gandpablo/news-articles-for-political-bias-classification',
@@ -31,6 +32,7 @@ foreach ($src in $datasetSources) {
 Write-Host ''
 
 function Convert-SecureStringToPlain {
+# Convert a SecureString into plain text for writing kaggle.json.
   param([System.Security.SecureString]$Secure)
   if (-not $Secure) { return $null }
   $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Secure)
@@ -42,6 +44,7 @@ function Convert-SecureStringToPlain {
   }
 }
 
+# Ensure Kaggle credentials are available at the given path.
 function Ensure-KaggleCredentials {
   param(
     [string]$cfgDir,
@@ -94,12 +97,59 @@ function Ensure-KaggleCredentials {
 }
 
 function Test-PythonModule {
+# Return true if a given Python module can be imported.
   param([string]$Name)
   & python -c "import importlib.util,sys; sys.exit(0 if importlib.util.find_spec('$Name') else 1)"
   return ($LASTEXITCODE -eq 0)
 }
 
+function Get-GpuNames {
+# List GPU adapter names via WMI; empty on failure.
+  try {
+    $gpus = Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name
+    return $gpus
+  } catch {
+    return @()
+  }
+}
+
+function Install-TorchSmart {
+# Install an appropriate torch build (CUDA, DirectML, or CPU) based on detected GPU.
+  $hasTorch = Test-PythonModule -Name 'torch'
+  $hasDml = Test-PythonModule -Name 'torch_directml'
+  if ($hasTorch) {
+    $msg = if ($hasDml) { 'Torch (DirectML) already installed; skipping torch install.' } else { 'Torch already installed; skipping torch install.' }
+    Write-Host $msg -ForegroundColor Cyan
+    return
+  }
+
+  $gpuNames = Get-GpuNames
+  $gpuString = ($gpuNames -join '; ').ToLower()
+  $torchInstalled = $false
+
+  if ($gpuString -match 'nvidia') {
+    Write-Host 'Detected NVIDIA GPU; installing CUDA torch build (cu124)...' -ForegroundColor Cyan
+    python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 | Out-Null
+    $torchInstalled = ($LASTEXITCODE -eq 0)
+  }
+  elseif ($gpuString -match 'amd|radeon|ati') {
+    if (Test-Path 'requirements-directml.txt') {
+      Write-Host 'Detected AMD/ATI GPU; installing DirectML torch build...' -ForegroundColor Cyan
+      python -m pip install -r requirements-directml.txt | Out-Null
+      $torchInstalled = ($LASTEXITCODE -eq 0)
+    } else {
+      Write-Host 'AMD/ATI GPU detected but requirements-directml.txt missing; skipping DirectML install.' -ForegroundColor Yellow
+    }
+  }
+
+  if (-not $torchInstalled) {
+    Write-Host 'Installing CPU torch build (no GPU detected or install skipped)...' -ForegroundColor Yellow
+    python -m pip install torch --index-url https://download.pytorch.org/whl/cpu | Out-Null
+  }
+}
+
 function Invoke-PythonQuiet {
+# Run a Python script with args, fail fast and print output on errors.
   param(
     [string]$Description,
     [string]$Script,
@@ -121,9 +171,12 @@ function Invoke-PythonQuiet {
 
 if (-not (Test-Path 'data')) { New-Item -Force -ItemType Directory -Path 'data' | Out-Null }
 
-# 1) Install requirements
+# 1) Install torch variant (auto-detects NVIDIA vs AMD vs CPU-only)
+Install-TorchSmart
+
+# 1b) Install base requirements (torch handled above)
 if (Test-Path 'requirements.txt') {
-  Write-Host 'Installing requirements...' -ForegroundColor Cyan
+  Write-Host 'Installing base requirements (excluding torch)...' -ForegroundColor Cyan
   python -m pip install -r requirements.txt | Out-Null
 }
 
@@ -184,19 +237,22 @@ if (-not $didKaggle) {
 # 2b) Convert non-CSV datasets (labelled corpus, BABE) into CSVs
 $labelledCorpusRoot = 'data/labelled-corpus-political-bias-hugging-face'
 if (Test-Path $labelledCorpusRoot) {
+  $sw = [System.Diagnostics.Stopwatch]::StartNew()
   try 
   {
-    Invoke-PythonQuiet -Description 'Converting non-CSV datasets to CSV (labelled corpus, BABE)...' `
+    Invoke-PythonQuiet -Description 'Converting non-CSV datasets to CSV (labelled corpus, BABE)... please wait' `
       -Script (Join-Path $here 'convert_datasets_tocsv.py')
+    Write-Host ("Conversion finished in {0:mm\:ss}." -f $sw.Elapsed) -ForegroundColor Green
   } 
   catch 
   {
-    Write-Host "Dataset conversion failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host ("Dataset conversion failed after {0:mm\:ss}: {1}" -f $sw.Elapsed, $_.Exception.Message) -ForegroundColor Yellow
   }
 }
 
 # 3) Build combined CSV from Kaggle folders if possible
 if ($didKaggle) {
+  $sw = [System.Diagnostics.Stopwatch]::StartNew()
   try {
     $inputs = @(
       'data/labelled-corpus-political-bias-hugging-face/labelled_corpus.csv',
@@ -207,11 +263,12 @@ if ($didKaggle) {
       'data/babe-media-bias-annotations-by-experts/babe_all.csv'
     )
     $args = @('--inputs') + $inputs + @('--output','data/train.csv','--balance_labels')
-    Invoke-PythonQuiet -Description 'Preparing combined training CSV from Kaggle folders...' `
+    Invoke-PythonQuiet -Description 'Preparing combined training CSV from Kaggle folders... please wait' `
       -Script 'prepare_kaggle_data.py' -Arguments $args
+    Write-Host ("Combined CSV ready in {0:mm\:ss}." -f $sw.Elapsed) -ForegroundColor Green
   } 
   catch {
-    Write-Host "Data preparation failed: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host ("Data preparation failed after {0:mm\:ss}: {1}" -f $sw.Elapsed, $_.Exception.Message) -ForegroundColor Yellow
   }
 }
 
@@ -227,25 +284,11 @@ if (-not (Test-Path 'data/train.csv')) {
   }
 }
 
-# 4b) Display overall label distribution for transparency/metrics
-if (Test-Path 'data/train.csv') {
-  try {
-    Write-Host 'Current data/train.csv label distribution:' -ForegroundColor Cyan
-    python -c "import pandas as pd, json; df = pd.read_csv('data/train.csv'); summary = {'total_samples': len(df), 'label_counts': df['label'].value_counts().to_dict()}; print(json.dumps(summary, indent=2))"
-  } 
-  catch {
-    Write-Host "Unable to summarize data/train.csv: $($_.Exception.Message)" -ForegroundColor Yellow
-  }
-}
-
 # 5) Build train/val/test splits for refinement and metrics
 $splitScript = Join-Path $here 'split_dataset.py'
 if ((Test-Path 'data/train.csv') -and (Test-Path $splitScript)) {
   try {
-    Write-Host 'Generating stratified data/train_split.csv, data/val_split.csv, data/test_split.csv...' -ForegroundColor Cyan
-    python $splitScript --input data/train.csv --output_dir data --train_frac 0.7 --val_frac 0.15 --seed 42
-    Write-Host 'Split breakdown (rows + label counts):' -ForegroundColor Cyan
-    python -c "import pandas as pd, json, os; result = {name: ({'rows': len((df := pd.read_csv(f'data/{name}_split.csv'))), 'label_counts': df['label'].value_counts().to_dict()} if os.path.exists(f'data/{name}_split.csv') else 'missing') for name in ['train', 'val', 'test']}; print(json.dumps(result, indent=2))"
+    python $splitScript --input data/train.csv --output_dir data --train_frac 0.7 --val_frac 0.15 --seed 42 | Out-Null
   } 
   catch {
     Write-Host "Split generation failed (continuing with data/train.csv): $($_.Exception.Message)" -ForegroundColor Yellow
@@ -257,11 +300,7 @@ $maxInt = [int]::MaxValue
 $trainingSeed = Get-Random -Minimum 1 -Maximum $maxInt
 Write-Host "Using randomized training seed: $trainingSeed" -ForegroundColor Cyan
 
-# Optional class weights passed through to train_textcnn.py. When non-empty,
-# these weights are parsed there and used to scale the loss contribution of
-# each label (Left/Right/Neutral). This lets us slightly favour performance
-# on a particular class (e.g., Right) without changing the model architecture
-# or the underlying train/val/test splits.
+# Optional class weights for train_textcnn.py (e.g. 'Left:1.10,Right:1.20,Neutral:1.0').
 $classWeights = ""
 
 $usingSample = $false
@@ -271,7 +310,7 @@ try {
   $usingSample = ($sampleFirstLine -eq $trainFirstLine)
 } catch {}
 
-#If the kaggle dataset does not load, default to simple training model
+# If the kaggle dataset does not load, default to simple training model
 if ($usingSample) {
   Write-Host 'Training model (sample data, quick settings)...' -ForegroundColor Cyan
 
@@ -287,7 +326,7 @@ if ($usingSample) {
   $minFreq     = 2
 } 
 
-#If the kaggle datasets load, use train.csv
+# If the kaggle datasets load, use train.csv
 else {
   Write-Host 'Training model on Kaggle combined dataset...' -ForegroundColor Cyan
   # Hyperparameters for full Kaggle dataset. Overrides the default model hyperparameters.

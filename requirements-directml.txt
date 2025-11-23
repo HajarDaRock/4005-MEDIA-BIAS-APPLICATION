@@ -1,0 +1,3 @@
+# Optional DirectML build for AMD/Intel GPUs on Windows.
+# Install this in addition to requirements.txt if you want DirectML acceleration.
+torch-directml; platform_system == "Windows"
